@@ -1,0 +1,14 @@
+[package]
+name = "OmnLabs"
+version = "0.1.0"
+authors = ["Owen Nelson <onelson@gmail.com>"]
+
+[[bin]]
+name = "omn-labs"
+
+[dependencies]
+piston = "0.26.0"
+piston2d-sprite = "0.30.0"
+find_folder = "0.3.0"
+piston_window = "0.57.0"
+piston-ai_behavior = "0.16.0"
