@@ -4,11 +4,9 @@ extern crate specs;
 extern crate find_folder;
 extern crate piston_window;
 
-use sprite::*;
-use piston_window::*;
-
 use std::rc::Rc;
-
+use sprite::Sprite;
+use piston_window::{Texture, PistonWindow, Flip, TextureSettings};
 use sys;
 use world;
 
@@ -34,12 +32,12 @@ pub struct Game {
     last_time: u64,
     last_update: u64,
     frame_count: f64,
-    logo: Sprite<ImageSize>,
+    logo: sys::Sprite,
 }
 
 
 impl Game {
-    pub fn new(window: & PistonWindow, scene: & Scene<ImageSize>)
+    pub fn new(window: & PistonWindow, scene: & sys::Scene)
     {
         let mut w = specs::World::new();
         w.register::<world::Sprited>();
