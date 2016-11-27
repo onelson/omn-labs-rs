@@ -1,8 +1,6 @@
 extern crate specs;
-extern crate sprite;
-extern crate graphics;
 
-use graphics::ImageSize;
+use sys;
 
 
 #[derive(Default)]
@@ -18,7 +16,7 @@ impl specs::Component for Body {
 
 #[derive(Default)]
 pub struct Sprited {
-    sprite: sprite::Sprite<ImageSize>
+    sprite: sys::Sprite
 }
 
 impl specs::Component for Sprited {
