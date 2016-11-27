@@ -3,7 +3,7 @@ extern crate specs;
 use sys;
 
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Body {
     x: f64,
     y: f64,
@@ -14,7 +14,7 @@ impl specs::Component for Body {
     type Storage = specs::VecStorage<Body>;
 }
 
-#[derive(Default)]
+#[derive(Clone)]
 pub struct Sprited {
     sprite: sys::Sprite
 }
