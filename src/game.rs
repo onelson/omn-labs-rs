@@ -79,7 +79,7 @@ impl Game {
         }
 
         self.planner.dispatch(delta);
-        self.planner.word.is_alive(self.player)
+        self.planner.word.is_alive(self.logo)
     }
 }
 
