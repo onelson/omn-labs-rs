@@ -23,6 +23,8 @@ impl Game {
         let spinner_sys = sys::spinner::System::new();
         // prepare entities
 
+        w.create_now().with(world::Body::default()).build();
+
         let mut plan = specs::Planner::new(w, 2);
         plan.add_system(spinner_sys, "spinner", 10);
 

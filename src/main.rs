@@ -39,7 +39,7 @@ fn main() {
     };
 
     sprite.set_position(width as f64 / 2.0, height as f64 / 2.0);
-    scene.add_child(sprite);
+    let sprite_id = scene.add_child(sprite);
 
     let w = specs::World::new();
     let mut game = game::Game::new(w);
@@ -47,22 +47,20 @@ fn main() {
     while let Some(e) = window.next() {
         use specs::Join;
         scene.event(&e);
-        game.tick();
-        let w = game.planner.mut_world();
 
+        game.tick();
+
+        let w = game.planner.mut_world();
         let reader = w.read::<world::Body>();
 
         for b in reader.iter() {
-            println!("Entity {:?}", b);
-            sprite.set_rotation(b.rotation);
+            scene.child_mut(sprite_id).unwrap().set_rotation(b.rotation);
         }
 
         window.draw_2d(&e, |c, g| {
             clear([1.0, 1.0, 1.0, 1.0], g);
             scene.draw(c.transform, g);
         });
-
-
     }
 
 }
