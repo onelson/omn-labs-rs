@@ -11,3 +11,6 @@ matrix:
     - rust: nightly
 addons:
   artifacts: true
+  paths:
+  - dist/*.zip
+script: ./build-release.sh
