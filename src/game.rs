@@ -3,24 +3,24 @@ use specs;
 
 use sys;
 use sprite::Scene;
-use piston_window::GenericEvent;
+use piston_window::ImageSize;
 use world;
 
 use std::sync::Arc;
 
 
-pub struct Game {
+pub struct Game<I> where I: ImageSize {
     pub world: specs::World,
     pub planner: specs::Planner<sys::Delta>,
-    pub scene: sys::Scene,
+    pub scene: sys::Scene<I>,
     last_time: u64,
     last_update: f64,
     frame_count: f64,
 }
 
 
-impl Game {
-    pub fn new(logo: sys::Sprite) -> Game
+impl<I: ImageSize> Game<I> {
+    pub fn new(logo: sys::Sprite<I>) -> Game<I>
     {
 
         let mut scene = Scene::new();

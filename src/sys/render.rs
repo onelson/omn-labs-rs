@@ -1,19 +1,20 @@
 use specs;
+use piston_window::ImageSize;
 use world as w;
 use rand;
 use sys;
 
 
 #[derive(Clone)]
-pub struct System<'a> {
-    pub scene: &'a sys::Scene
+pub struct System<'a, I> where I: ImageSize + 'a {
+    pub scene: &'a sys::Scene<I>
 }
 
-impl<'a> System<'a> {
-    pub fn new(scene: &'a sys::Scene) -> System<'a> { System { scene: scene } }
+impl<'a, I: ImageSize + 'a> System<'a, I> {
+    pub fn new(scene: &'a sys::Scene<I>) -> System<'a, I> { System { scene: scene } }
 }
 
-impl<'a> specs::System<super::Delta> for System<'a>
+impl<'a, I: ImageSize + 'a> specs::System<super::Delta> for System<'a, I>
 {
     fn run(&mut self, arg: specs::RunArg, _: super::Delta) {
         use specs::Join;
