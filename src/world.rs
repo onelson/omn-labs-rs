@@ -1,4 +1,7 @@
+use uuid::Uuid;
 use specs;
+use sys;
+
 
 #[derive(Default, Clone, Debug)]
 pub struct Body {
@@ -8,5 +11,14 @@ pub struct Body {
 }
 
 impl specs::Component for Body {
+    type Storage = specs::VecStorage<Body>;
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct Sprited {
+    id: Uuid
+}
+
+impl specs::Component for Sprited {
     type Storage = specs::VecStorage<Body>;
 }

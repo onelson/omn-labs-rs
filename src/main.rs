@@ -5,9 +5,9 @@ extern crate find_folder;
 extern crate time;
 extern crate specs;
 extern crate rand;
+extern crate uuid;
 
 use std::rc::Rc;
-use sprite::{Sprite, Scene};
 use piston_window::*;
 
 mod game;
@@ -24,8 +24,6 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut scene = Scene::new();
-
     let mut sprite = {
         let assets = find_folder::Search::ParentsThenKids(3, 3)
             .for_folder("assets").unwrap();
@@ -35,31 +33,20 @@ fn main() {
             Flip::None,
             &TextureSettings::new()
         ).unwrap());
-        Sprite::from_texture(tex.clone())
+        sprite::Sprite::from_texture(tex.clone())
     };
 
     sprite.set_position(width as f64 / 2.0, height as f64 / 2.0);
-    let sprite_id = scene.add_child(sprite);
 
-    let w = specs::World::new();
-    let mut game = game::Game::new(w);
+    let mut game = game::Game::new(sprite);
 
     while let Some(e) = window.next() {
-        use specs::Join;
-        scene.event(&e);
-
         game.tick();
-
-        let w = game.planner.mut_world();
-        let reader = w.read::<world::Body>();
-
-        for b in reader.iter() {
-            scene.child_mut(sprite_id).unwrap().set_rotation(b.rotation);
-        }
+        game.scene.event(&e);
 
         window.draw_2d(&e, |c, g| {
             clear([1.0, 1.0, 1.0, 1.0], g);
-            scene.draw(c.transform, g);
+            game.scene.draw(c.transform, g);
         });
     }
 
