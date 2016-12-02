@@ -8,19 +8,18 @@ use std::sync::Arc;
 use radiant_rs::{Layer, Renderer, Sprite};
 use assets::{AssetManager, ids as asset_ids};
 
-pub struct Game<'game> {
+pub struct Game {
     pub world: specs::World,
     pub planner: specs::Planner<sys::Delta>,
     pub layer: Arc<Layer>,
-    pub assets: AssetManager<'game>,
     last_time: u64,
     last_update: f64,
     frame_count: f64,
 }
 
 
-impl<'game> Game<'game> {
-    pub fn new(renderer: &'game Renderer) -> Self
+impl<'game> Game {
+    pub fn new(renderer: &Renderer) -> Self
     {
 
         let (width, height) = (300, 300);
@@ -30,11 +29,9 @@ impl<'game> Game<'game> {
         w.register::<world::Sprited>();
         w.register::<world::Body>();
 
-        let assets = AssetManager::new(&renderer);
-
         // prepare systems
         let spinner_sys = sys::spinner::System::new();
-        let render_sys = sys::render::System { layer: &layer, assets: assets };
+        let render_sys = sys::render::System { layer: &layer, assets: AssetManager::new(&renderer) };
 
         // prepare entities
 
@@ -52,7 +49,6 @@ impl<'game> Game<'game> {
             planner: plan,
             layer: layer,
             world: w,
-            assets: assets,
             last_time: time::precise_time_ns(),
             frame_count: 0.0
         }
