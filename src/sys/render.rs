@@ -10,7 +10,7 @@ use assets::AssetManager;
 #[derive(Clone)]
 pub struct System<'a> {
     pub layer: &'a Layer,
-    pub assets: &'a AssetManager<'a>
+    pub assets: AssetManager<'a>
 }
 
 

@@ -6,13 +6,12 @@ use world;
 
 use std::sync::Arc;
 use radiant_rs::{Layer, Renderer, Sprite};
-use assets::{AssetManager, SpriteSrc};
+use assets::AssetManager;
 
 pub struct Game {
     pub world: specs::World,
     pub planner: specs::Planner<sys::Delta>,
     pub layer: Layer,
-    assets: AssetManager,
     last_time: u64,
     last_update: f64,
     frame_count: f64,
@@ -23,11 +22,6 @@ impl Game {
     pub fn new(renderer: &Renderer) -> Game
     {
 
-        let assets = AssetManager::new(&renderer);
-
-        let logo_id = assets.load_sprite(r"assets/rust.png");
-
-
         let (width, height) = (300, 300);
         let layer = Layer::new(width, height);
 
@@ -37,12 +31,12 @@ impl Game {
 
         // prepare systems
         let spinner_sys = sys::spinner::System::new();
-        let render_sys = sys::render::System { layer: Arc::new(&layer), assets: assets };
+        let render_sys = sys::render::System { layer: &layer, assets: AssetManager::new(&renderer) };
 
         // prepare entities
 
         w.create_now()
-            .with(world::Sprited { id: logo_id })
+            .with(world::Sprited { path: r"assets/rust.png".to_string() })
             .with(world::Body::default())
             .build();
 
@@ -54,7 +48,6 @@ impl Game {
             last_update: 0.0,
             planner: plan,
             layer: layer,
-            assets,
             world: w,
             last_time: time::precise_time_ns(),
             frame_count: 0.0
