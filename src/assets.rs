@@ -2,7 +2,7 @@ use radiant_rs::{Renderer, Sprite};
 use std::sync::Arc;
 use std::collections::HashMap;
 
-
+#[derive(Clone)]
 pub struct AssetManager<'a> {
     renderer: &'a Renderer<'a>,
     sprites: HashMap<&'a str, Arc<Sprite<'a>>>
