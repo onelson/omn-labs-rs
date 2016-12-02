@@ -21,7 +21,7 @@ impl specs::System<super::Delta> for System
 
         // update entities
         for b in (&mut body).iter() {
-            b.rotation += rand::random::<f64>() * 5.0;
+            b.rotation += rand::random::<f32>() * 5.0;
         }
     }
 }

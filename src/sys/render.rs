@@ -23,10 +23,10 @@ impl<'a> specs::System<super::Delta> for System<'a>
         });
 
         // update entities
-        self.layer.clear();
         for (b, s) in (&body, &sprited).iter() {
             let frame_id = 0;
-            s.sprite.draw_transformed(&self.layer, frame_id, 320.0, 200.0, Color::white(), b.rotation, 1, 1);
+            let sprite = self.assets.get_sprite(s.id);
+            sprite.draw_transformed(&self.layer, frame_id, b.x, b.y, Color::white(), b.rotation, 1., 1.);
         }
     }
 }

@@ -1,12 +1,12 @@
 use specs;
 use sys;
-use uuid;
 
-#[derive(Default, Clone, Debug)]
+
+#[derive(Clone, Debug)]
 pub struct Body {
-    pub x: f64,
-    pub y: f64,
-    pub rotation: f64,
+    pub x: f32,
+    pub y: f32,
+    pub rotation: f32,
 }
 
 impl specs::Component for Body {
@@ -15,7 +15,7 @@ impl specs::Component for Body {
 
 #[derive(Debug)]
 pub struct Sprited {
-    path: String
+    pub id: u8
 }
 
 impl specs::Component for Sprited {

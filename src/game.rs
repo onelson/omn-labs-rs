@@ -6,38 +6,41 @@ use world;
 
 use std::sync::Arc;
 use radiant_rs::{Layer, Renderer, Sprite};
-use assets::AssetManager;
+use assets::{AssetManager, ids as asset_ids};
 
-pub struct Game {
+pub struct Game<'game> {
     pub world: specs::World,
     pub planner: specs::Planner<sys::Delta>,
-    pub layer: Layer,
+    pub layer: Arc<Layer>,
+    pub assets: AssetManager<'game>,
     last_time: u64,
     last_update: f64,
     frame_count: f64,
 }
 
 
-impl Game {
-    pub fn new(renderer: &Renderer) -> Game
+impl<'game> Game<'game> {
+    pub fn new(renderer: &'game Renderer) -> Self
     {
 
         let (width, height) = (300, 300);
-        let layer = Layer::new(width, height);
+        let layer = Arc::new(Layer::new(width, height));
 
         let w = specs::World::new();
         w.register::<world::Sprited>();
         w.register::<world::Body>();
 
+        let assets = AssetManager::new(&renderer);
+
         // prepare systems
         let spinner_sys = sys::spinner::System::new();
-        let render_sys = sys::render::System { layer: &layer, assets: AssetManager::new(&renderer) };
+        let render_sys = sys::render::System { layer: &layer, assets: assets };
 
         // prepare entities
 
         w.create_now()
-            .with(world::Sprited { path: r"assets/rust.png".to_string() })
-            .with(world::Body::default())
+            .with(world::Sprited { id: asset_ids::LOGO })
+            .with(world::Body { x: 200., y: 300., rotation: 0. })
             .build();
 
         let mut plan = specs::Planner::new(w, 2);
@@ -49,6 +52,7 @@ impl Game {
             planner: plan,
             layer: layer,
             world: w,
+            assets: assets,
             last_time: time::precise_time_ns(),
             frame_count: 0.0
         }
