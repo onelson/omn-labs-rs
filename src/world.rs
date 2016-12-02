@@ -1,8 +1,6 @@
-use radiant_rs::Sprite;
 use specs;
 use sys;
-use std::sync::Arc;
-
+use uuid;
 
 #[derive(Default, Clone, Debug)]
 pub struct Body {
@@ -15,9 +13,9 @@ impl specs::Component for Body {
     type Storage = specs::VecStorage<Body>;
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Debug)]
 pub struct Sprited {
-    sprite: Arc<Sprite>
+    id: uuid::Uuid
 }
 
 impl specs::Component for Sprited {

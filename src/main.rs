@@ -10,6 +10,7 @@ use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Sprite, Font, FontInfo, 
 mod game;
 mod sys;
 mod world;
+mod assets;
 
 fn main() {
     let (width, height) = (300, 300);

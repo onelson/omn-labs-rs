@@ -4,16 +4,15 @@ use rand;
 use sys;
 use std::sync::Arc;
 use radiant_rs::{Color, Layer};
+use assets::AssetManager;
 
 
 #[derive(Clone)]
 pub struct System<'a> {
-    pub layer: Arc<&'a Layer>
+    pub layer: &'a Layer,
+    pub assets: &'a AssetManager<'a>
 }
 
-//impl System<'a> {
-//    pub fn new(layer: Arc<&'a Layer>) -> System<'a> { System { layer: layer } }
-//}
 
 impl<'a> specs::System<super::Delta> for System<'a>
 {
