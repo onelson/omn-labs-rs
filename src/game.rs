@@ -5,8 +5,9 @@ use sys;
 use world;
 
 use std::sync::Arc;
-use radiant_rs::Layer
-pub struct Game<I> where I: ImageSize {
+use radiant_rs::{Layer, Renderer, Sprite};
+
+pub struct Game {
     pub world: specs::World,
     pub planner: specs::Planner<sys::Delta>,
     pub layer: Layer,
@@ -17,7 +18,7 @@ pub struct Game<I> where I: ImageSize {
 
 
 impl Game {
-    pub fn new() -> Game<I>
+    pub fn new(renderer: &Renderer) -> Game
     {
         let (width, height) = (300, 300);
         let layer = Layer::new(width, height);
@@ -33,7 +34,9 @@ impl Game {
         // prepare entities
 
         w.create_now()
-            .with(world::Sprited { sprite: Arc::new(&Sprite::from_file(&renderer.context(), r"assets/rust.png");)})
+            .with(world::Sprited {
+                sprite: Arc::new(Sprite::from_file(&renderer.context(), r"assets/rust.png"))
+            })
             .with(world::Body::default())
             .build();
 

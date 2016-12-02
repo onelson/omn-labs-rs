@@ -16,13 +16,9 @@ impl specs::Component for Body {
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct Sprited<'a> {
-    sprite: Arc<&'a Sprite>
+pub struct Sprited {
+    sprite: Arc<Sprite>
 }
-
-//impl Sprited<'a> {
-//    pub fn new(sprite: Arc<&'a Sprite>) -> Sprited<'a> { Sprited { sprite: sprite } }
-//}
 
 impl specs::Component for Sprited {
     type Storage = specs::VecStorage<Sprited>;

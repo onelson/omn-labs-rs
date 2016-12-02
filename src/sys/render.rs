@@ -3,7 +3,7 @@ use world as w;
 use rand;
 use sys;
 use std::sync::Arc;
-use radiant_rs::Layer;
+use radiant_rs::{Color, Layer};
 
 
 #[derive(Clone)]
@@ -15,7 +15,7 @@ pub struct System<'a> {
 //    pub fn new(layer: Arc<&'a Layer>) -> System<'a> { System { layer: layer } }
 //}
 
-impl specs::System<super::Delta> for System
+impl<'a> specs::System<super::Delta> for System<'a>
 {
     fn run(&mut self, arg: specs::RunArg, _: super::Delta) {
         use specs::Join;

@@ -16,13 +16,13 @@ fn main() {
     let display = Display::new(DisplayInfo { width: width, height: height, vsync: true, ..DisplayInfo::default() });
     let renderer = Renderer::new(&display);
 
-    let sprite = Sprite::from_file(&renderer.context(), r"assets/rust.png");
+//    let sprite = Sprite::from_file(&renderer.context(), r"assets/rust.png");
 
 //    sprite.set_position(width as f64 / 2.0, height as f64 / 2.0);
 
 
 
-    let game = game::Game::new(&layer);
+    let game = game::Game::new(&renderer);
 
     std::thread::spawn(|| {
         let mut game = game;
@@ -46,8 +46,8 @@ fn main() {
 
         // draw a sprite (going though the spritesheet frames at 30 fps)
 //        let frame_id = (state.elapsed_f32 * 30.0) as u32;
-        let frame_id = 0;
-        sprite.draw_transformed(&game.layer, frame_id, 320.0, 200.0, Color::white(), rotation, 1, 1);
+//        let frame_id = 0;
+//        sprite.draw_transformed(&game.layer, frame_id, 320.0, 200.0, Color::white(), rotation, 1, 1);
 
         // draw the layer
         renderer.clear_target(Color::black());
