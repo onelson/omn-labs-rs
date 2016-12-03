@@ -8,13 +8,13 @@ use assets::AssetManager;
 
 
 #[derive(Clone)]
-pub struct System<'a> {
+pub struct System<'a, 'b> {
     pub layer: &'a Layer,
-    pub assets: &'a AssetManager<'a>
+    pub assets: &'b AssetManager<'b>
 }
 
 
-impl<'a> specs::System<super::Delta> for System<'a>
+impl<'a, 'b> specs::System<super::Delta> for System<'a, 'b>
 {
     fn run(&mut self, arg: specs::RunArg, _: super::Delta) {
         use specs::Join;
