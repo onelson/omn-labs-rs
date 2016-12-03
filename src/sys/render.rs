@@ -10,7 +10,7 @@ use assets::AssetManager;
 #[derive(Clone)]
 pub struct System<'a> {
     pub layer: &'a Layer,
-    pub assets: AssetManager<'a>
+    pub assets: &'a AssetManager<'a>
 }
 
 
@@ -26,7 +26,7 @@ impl<'a> specs::System<super::Delta> for System<'a>
         for (b, s) in (&body, &sprited).iter() {
             let frame_id = 0;
             let sprite = self.assets.get_sprite(s.id);
-            sprite.draw_transformed(&self.layer, frame_id, b.x, b.y, Color::white(), b.rotation, 1., 1.);
+            sprite.draw_transformed(&self.layer, frame_id, b.x, b.y, Color::white(), b.rotation, b.scale_x, b.scale_y);
         }
     }
 }

@@ -14,18 +14,18 @@ pub struct AssetManager<'a> {
 
 
 impl<'a> AssetManager<'a> {
-    pub fn new(renderer: &Renderer<'a>) -> AssetManager<'a> {
+    pub fn new(renderer: &'a Renderer<'a>) -> Self {
         AssetManager { renderer: renderer, sprites: HashMap::new() }
     }
 
-    fn load(&'a self, id: u8) -> Arc<Sprite> {
+    fn load(&'a self, id: u8) -> Arc<Sprite<'a>> {
         let fp = match id {  // FIXME: need a way to map ids to file paths that does not have a long search time - does this?
             ids::LOGO => r"assets/rust.png"
         };
         Arc::new(Sprite::from_file(&self.renderer.context(), fp))
     }
 
-    pub fn get_sprite(&'a mut self, id: u8) -> &Arc<Sprite> {
+    pub fn get_sprite(&'a mut self, id: u8) -> &Arc<Sprite<'a>> {
         if !self.sprites.contains_key(&id) {
             self.sprites.insert(id, &self.load(id));
         }
