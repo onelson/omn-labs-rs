@@ -4,15 +4,19 @@ use world as w;
 use rand;
 
 #[derive(Clone)]
-pub struct System;
+pub struct System {
+    factor: f32
+}
 
 impl System {
-    pub fn new() -> System { System{} }
+    pub fn new() -> System {
+        System { factor: 20.0 }
+    }
 }
 
 impl specs::System<super::Delta> for System
 {
-    fn run(&mut self, arg: specs::RunArg, _: super::Delta) {
+    fn run(&mut self, arg: specs::RunArg, delta: super::Delta) {
         use specs::Join;
 
         let mut body = arg.fetch(|w| {
@@ -21,7 +25,7 @@ impl specs::System<super::Delta> for System
 
         // update entities
         for b in (&mut body).iter() {
-            b.rotation += rand::random::<f32>() * 5.0;
+            b.rotation += self.factor % rand::random::<f32>();
         }
     }
 }

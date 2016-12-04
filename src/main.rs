@@ -5,7 +5,12 @@ extern crate rand;
 extern crate uuid;
 extern crate radiant_rs;
 
+#[macro_use]
+extern crate lazy_static;
+
 use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Color, utils};
+use std::sync::Arc;
+use std::sync::mpsc::channel;
 
 mod game;
 mod sys;
@@ -14,29 +19,52 @@ mod assets;
 
 use assets::AssetManager;
 
+static WIDTH: u32 = 512;
+static HEIGHT: u32 = 512;
+
 fn main() {
-    let (width, height) = (300, 300);
-    let display = Display::new(DisplayInfo { width: width, height: height, vsync: true, ..DisplayInfo::default() });
+    let display = Display::new(
+        DisplayInfo {
+            width: WIDTH,
+            height: HEIGHT,
+            vsync: true, ..DisplayInfo::default()
+        }
+    );
     let renderer = Renderer::new(&display);
+    let mut asset_manager = AssetManager::new(&renderer);
 
+    let (tx, rx) = channel::<sys::render::DrawCommand>();
 
-    let assets = AssetManager::new(&renderer);
-    let game = game::Game::new(&assets);
-
-    std::thread::spawn(|| {
-        let mut game = game;
-        while game.tick() {}
+    let layer = Arc::new(Layer::new(WIDTH, HEIGHT));
+    let mut game = game::Game::new(&layer, &tx);
+    std::thread::spawn(move || {
+        while game.tick() {
+            game.planner.wait();
+            tx.send(sys::render::DrawCommand::Flush);
+            std::thread::sleep(std::time::Duration::from_millis(15));
+        }
     });
 
     utils::renderloop(|state| {
+        use sys::render::DrawCommand;
+        match rx.recv().unwrap() {
+            DrawCommand::DrawTransformed{id, layer, frame, x, y, color, rot, sx, sy} => {
+                let sprite = asset_manager.get_sprite(&id);
+                sprite.draw_transformed(
+                    &layer, frame, x, y, color, rot, sx, sy
+                );
+            },
 
-        // clear the layer (layers can be drawn multiple times, e.g. a static UI might not need to be updated each frame)
-        game.layer.clear();
+            DrawCommand::Flush => {
+                // draw the layer
+                renderer.clear_target(Color::black());
+                renderer.draw_layer(&layer);
+                renderer.swap_target();
+                layer.clear();
+            }
 
-        // draw the layer
-        renderer.clear_target(Color::black());
-        renderer.draw_layer(&game.layer);
-        renderer.swap_target();
+            _ => unreachable!()
+        }
 
         // poll for new events on the display, exit loop if the window was closed
         !display.poll_events().was_closed()

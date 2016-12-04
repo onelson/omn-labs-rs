@@ -2,6 +2,7 @@
 name = "OmnLabs"
 version = "0.1.0"
 dependencies = [
+ "lazy_static 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "radiant-rs 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",

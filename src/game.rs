@@ -5,14 +5,13 @@ use sys;
 use world;
 
 use std::sync::Arc;
+use std::sync::mpsc::Sender;
 use radiant_rs::{Layer, Renderer, Sprite};
 use assets::{AssetManager, ids as asset_ids};
 
 
 pub struct Game {
-    pub world: specs::World,
     pub planner: specs::Planner<sys::Delta>,
-    pub layer: Arc<Layer>,
     last_time: u64,
     last_update: f64,
     frame_count: f64,
@@ -20,32 +19,33 @@ pub struct Game {
 
 
 impl Game {
-    pub fn new<'a>(asset_manager: &'a AssetManager<'a>) -> Self
-    {
-        let (width, height) = (300, 300);
-        let w = specs::World::new();
-        w.register::<world::Sprited>();
-        w.register::<world::Body>();
-
-        let game = Game {
-            world: w,
+    pub fn new(layer: &Arc<Layer>, render_tx: &Sender<sys::render::DrawCommand>) -> Self {
+        let mut game = Game {
             last_update: 0.0,
-            planner: specs::Planner::new(w, 2),
-            layer: Arc::new(Layer::new(width, height)),
+            planner: specs::Planner::new( specs::World::new(), 2 ),
             last_time: time::precise_time_ns(),
             frame_count: 0.0
         };
 
+        game.planner.mut_world().register::<world::Sprited>();
+        game.planner.mut_world().register::<world::Body>();
+
         // prepare systems
         let spinner_sys = sys::spinner::System::new();
 
-        let render_sys = sys::render::System { layer: &game.layer, assets: asset_manager };
+        let render_sys = sys::render::System {
+            layer: layer.clone(),
+            tx: render_tx.clone()
+        };
 
         // prepare entities
-        game.world.create_now()
-            .with(world::Sprited { id: asset_ids::LOGO })
-            .with(world::Body { x: 200., y: 300., rotation: 0., scale_x: 1., scale_y: 1. })
-            .build();
+        for i in 0 .. 10 {
+            let i = i as f32;
+            game.planner.mut_world().create_now()
+                .with(world::Sprited { id: asset_ids::LAUGHING_MAN })
+                .with(world::Body { x: 256. + i, y: 256. + i, rotation: 0., scale_x: 2.5, scale_y: 2.5 })
+                .build();
+        }
 
         game.planner.add_system(spinner_sys, "spinner", 10);
         game.planner.add_system(render_sys, "render_layer", 20);

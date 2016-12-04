@@ -1,33 +1,37 @@
-use radiant_rs::{Renderer, Sprite};
+
+use radiant_rs::{RenderContext, Renderer, Sprite};
 use std::sync::Arc;
 use std::collections::HashMap;
 
+
 pub mod ids {
-    pub const LOGO: u8 = 1;
+    pub const LAUGHING_MAN: u8 = 1;
 }
 
 #[derive(Clone)]
 pub struct AssetManager<'a> {
-    renderer: &'a Renderer<'a>,
-    sprites: HashMap<u8, &'a Arc<Sprite<'a>>>
+    context: RenderContext<'a>,
+    sprites: HashMap<u8, Sprite<'a>>
 }
 
 
 impl<'a> AssetManager<'a> {
     pub fn new(renderer: &'a Renderer<'a>) -> Self {
-        AssetManager { renderer: renderer, sprites: HashMap::new() }
+        AssetManager { context: renderer.context(), sprites: HashMap::new() }
     }
 
-    fn load(&'a self, id: u8) -> Arc<Sprite<'a>> {
-        let fp = match id {  // FIXME: need a way to map ids to file paths that does not have a long search time - does this?
-            ids::LOGO => r"assets/rust.png"
+    fn load(&self, id: &u8) -> Sprite<'a> {
+        let fp = match *id {  // FIXME: need a way to map ids to file paths that does not have a long search time - does this?
+            ids::LAUGHING_MAN => r"assets/LaughingMan_128x128x1.png",
+            _ => unreachable!()
         };
-        Arc::new(Sprite::from_file(&self.renderer.context(), fp))
+        Sprite::from_file(&self.context, fp)
     }
 
-    pub fn get_sprite(&'a mut self, id: u8) -> &Arc<Sprite<'a>> {
-        if !self.sprites.contains_key(&id) {
-            self.sprites.insert(id, &self.load(id));
+    pub fn get_sprite(&mut self, id: &u8) -> &Sprite<'a> {
+        if !self.sprites.contains_key(id) {
+            let sprite = self.load(id);
+            self.sprites.insert(*id, sprite);
         }
         self.sprites.get(&id).unwrap()
     }
