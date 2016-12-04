@@ -10,7 +10,7 @@ pub struct System {
 
 impl System {
     pub fn new() -> System {
-        System { factor: 20.0 }
+        System { factor: 2.5 }
     }
 }
 

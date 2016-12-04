@@ -57,7 +57,7 @@ fn main() {
 
             DrawCommand::Flush => {
                 // draw the layer
-                renderer.clear_target(Color::black());
+                renderer.clear_target(Color::from_hsl(0., 0., 0.2, 1.));
                 renderer.draw_layer(&layer);
                 renderer.swap_target();
                 layer.clear();
