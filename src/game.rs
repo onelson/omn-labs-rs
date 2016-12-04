@@ -40,10 +40,11 @@ impl Game {
 
         // prepare entities
         for i in 0 .. 10 {
-            let i = i as f32;
+            let i = (i * 30) as f32;
+
             game.planner.mut_world().create_now()
                 .with(world::Sprited { id: asset_ids::LAUGHING_MAN })
-                .with(world::Body { x: 256. + i, y: 256. + i, rotation: 0., scale_x: 2.5, scale_y: 2.5 })
+                .with(world::Body { x: 115. + i, y: 115. + i, rotation: 0., scale_x: 1.8, scale_y: 1.8 })
                 .build();
         }
 
