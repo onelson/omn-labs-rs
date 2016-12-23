@@ -1,12 +1,12 @@
 
 use radiant_rs::{RenderContext, Renderer, Sprite};
-use std::sync::Arc;
 use std::collections::HashMap;
 
 
 pub mod ids {
-    pub const LAUGHING_MAN: u8 = 1;
+    pub const RUST_LOGO: u8 = 1;
 }
+
 
 #[derive(Clone)]
 pub struct AssetManager<'a> {
@@ -21,8 +21,8 @@ impl<'a> AssetManager<'a> {
     }
 
     fn load(&self, id: &u8) -> Sprite<'a> {
-        let fp = match *id {  // FIXME: need a way to map ids to file paths that does not have a long search time - does this?
-            ids::LAUGHING_MAN => r"assets/LaughingMan_128x128x1.png",
+        let fp = match *id {
+            ids::RUST_LOGO => r"assets/rust_128x128x1.png",
             _ => unreachable!()
         };
         Sprite::from_file(&self.context, fp)

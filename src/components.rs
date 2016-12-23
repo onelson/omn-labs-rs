@@ -1,5 +1,4 @@
 use specs;
-use sys;
 
 
 #[derive(Clone, Debug)]
@@ -15,7 +14,7 @@ impl specs::Component for Body {
     type Storage = specs::VecStorage<Body>;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Sprited {
     pub id: u8
 }

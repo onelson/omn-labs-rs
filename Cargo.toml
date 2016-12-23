@@ -1,5 +1,5 @@
 [package]
-name = "OmnLabs"
+name = "omn-labs"
 version = "0.1.0"
 authors = ["Owen Nelson <onelson@gmail.com>"]
 
@@ -10,6 +10,5 @@ name = "omn-labs"
 specs = "0.7.0"
 time = "*"
 rand = "*"
-uuid = "*"
 radiant-rs = "0.1.1"
-lazy_static = "0.2"
+
