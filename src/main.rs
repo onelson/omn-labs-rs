@@ -1,61 +1,87 @@
 
 extern crate time;
 extern crate specs;
+extern crate ggez;
 extern crate rand;
-extern crate radiant_rs;
 
 mod assets;
 mod components;
 mod game;
 mod systems;
 
+use ggez::audio;
+use ggez::conf;
+use ggez::event;
+use ggez::{GameResult, Context};
+use ggez::graphics;
+use ggez::graphics::Color;
+use ggez::timer;
 use std::sync::mpsc::channel;
-use std::sync::Arc;
-use radiant_rs::{DisplayInfo, Display, Renderer, Layer, Color, utils};
-use systems::DrawCommand::{self, Flush, DrawTransformed};
+use std::time::Duration;
 
-fn main() {
+use systems::DrawCommand;
 
-    let (width, height) = (300, 300);
+struct MainState {
+    assets: assets::AssetManager,
+    ecs: game::Game,
+    // rx/tx
+}
 
-    let display = Display::new(DisplayInfo {
-        width: width,
-        height: height,
-        vsync: true,
-        ..DisplayInfo::default()
-    });
+impl MainState {
+    fn new(ctx: &mut Context) -> GameResult<Self> {
 
-    let renderer = Renderer::new(&display);
-    let (tx, rx) = channel::<DrawCommand>();
-    let mut asset_manager = assets::AssetManager::new(&renderer);
-    let main_layer = Arc::new(Layer::new(width, height));
-    let mut game = game::Game::new(tx.clone());
+        ctx.print_resource_stats();
 
-    std::thread::spawn(move || {
-        while game.tick() {
-            let _ = tx.send(Flush);
-            std::thread::sleep(std::time::Duration::from_millis(15));
-        }
-    });
+        let (tx, rx) = channel::<DrawCommand>();
 
-    utils::renderloop(|state| {
-        match rx.recv().unwrap() {
-            DrawTransformed {id, frame, x, y, color, rot, sx, sy} => {
-                let sprite = asset_manager.get_sprite(&id);
-                sprite.draw_transformed(
-                    &main_layer, frame, x, y, color, rot, sx, sy
-                );
-            },
+        let s = MainState {
+            assets: assets::AssetManager::new(),
+            ecs: game::Game::new(tx)
+        };
+        Ok(s)
+    }
+}
 
-            Flush => {
-                renderer.clear_target(Color::white());
-                renderer.draw_layer(&main_layer);
-                renderer.swap_target();
-                main_layer.clear();
-            }
-        }
+impl event::EventHandler for MainState {
+    fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+        Ok(())
+    }
 
-        !display.poll_events().was_closed()
-    });
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::clear(ctx);
 
+        let image = self.assets.get_sprite(ctx, "rust_128x128x1.png");
+
+        graphics::draw(ctx,
+                       &mut image,
+                       graphics::Rect::zero(),
+                       graphics::Point::zero(),
+                       0.0)?;
+
+        graphics::present(ctx);
+        // println!("Approx FPS: {}", timer::get_fps(ctx));
+        // timer::sleep_until_next_frame(ctx, 60);
+        Ok(())
+
+    }
+}
+
+
+pub fn main() {
+
+    let mut conf = conf::Conf::new();
+    conf.window_height = 300;
+    conf.window_width = 300;
+    conf.window_title = "Omn Labs RS".to_string();
+
+    println!("Starting with default config: {:#?}", conf);
+
+    let ctx = &mut Context::load_from_conf("Omn Labs", conf).unwrap();
+
+    let state = &mut MainState::new(ctx).unwrap();
+    if let Err(e) = event::run(ctx, state) {
+        println!("Error encountered: {}", e);
+    } else {
+        println!("Game exited cleanly.");
+    }
 }

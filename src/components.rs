@@ -16,7 +16,7 @@ impl specs::Component for Body {
 
 #[derive(Clone, Debug)]
 pub struct Sprited {
-    pub id: u8
+    pub path: String
 }
 
 impl specs::Component for Sprited {

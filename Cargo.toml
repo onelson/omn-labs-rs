@@ -1,6 +1,6 @@
 [package]
 name = "omn-labs"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Owen Nelson <onelson@gmail.com>"]
 
 [[bin]]
@@ -10,5 +10,7 @@ name = "omn-labs"
 specs = "0.7.0"
 time = "*"
 rand = "*"
-radiant-rs = "0.1.1"
+ggez = "0.2.1"
 
+[replace]
+"ggez:0.2.1" = { git = 'https://github.com/ggez/ggez', branch = 'gfx' }

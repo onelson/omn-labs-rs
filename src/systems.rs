@@ -1,7 +1,6 @@
 use specs;
 use rand;
 use std::sync::mpsc::Sender;
-use radiant_rs::{Color};
 use game;
 use components;
 
@@ -31,9 +30,8 @@ impl specs::System<game::Delta> for Spinner
 
 pub enum DrawCommand {
     DrawTransformed {
-        id: u8,
+        path: String,
         frame: u32,
-        color: Color,
         x: f32,
         y: f32,
         rot: f32,
@@ -60,9 +58,8 @@ impl specs::System<game::Delta> for Renderer
         for (b, s) in (&body, &sprited).iter() {
             let frame_id = 0;
             self.tx.send(DrawCommand::DrawTransformed {
-                id: s.id,
+                path: s.path,
                 frame: frame_id,
-                color: Color::white(),
                 x: b.x,
                 y: b.y,
                 rot: b.rotation,
