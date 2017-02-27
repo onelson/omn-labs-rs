@@ -58,7 +58,7 @@ impl specs::System<game::Delta> for Renderer
         for (b, s) in (&body, &sprited).iter() {
             let frame_id = 0;
             self.tx.send(DrawCommand::DrawTransformed {
-                path: s.path,
+                path: s.path.to_string(),
                 frame: frame_id,
                 x: b.x,
                 y: b.y,

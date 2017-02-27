@@ -4,7 +4,6 @@ extern crate specs;
 extern crate ggez;
 extern crate rand;
 
-mod assets;
 mod components;
 mod game;
 mod systems;
@@ -14,17 +13,16 @@ use ggez::conf;
 use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
-use ggez::graphics::Color;
+use ggez::graphics::{Color, Image};
 use ggez::timer;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
 use systems::DrawCommand;
 
 struct MainState {
-    assets: assets::AssetManager,
     ecs: game::Game,
-    // rx/tx
+    render_rx: Receiver<DrawCommand>
 }
 
 impl MainState {
@@ -35,7 +33,7 @@ impl MainState {
         let (tx, rx) = channel::<DrawCommand>();
 
         let s = MainState {
-            assets: assets::AssetManager::new(),
+            render_rx: rx,
             ecs: game::Game::new(tx)
         };
         Ok(s)
@@ -44,25 +42,34 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
+        self.ecs.tick();
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        let image = self.assets.get_sprite(ctx, "rust_128x128x1.png");
+        for cmd in self.render_rx.try_iter() {
+            match cmd {
+                DrawCommand::DrawTransformed {path, frame, x, y, rot, sx, sy} => {
 
-        graphics::draw(ctx,
-                       &mut image,
-                       graphics::Rect::zero(),
-                       graphics::Point::zero(),
-                       0.0)?;
+                    // FIXME: use asset manager instead of reading from disk each tick
+                    let mut image = Image::new(ctx, path).unwrap();
+                    let bbox = image.rect();
+                    graphics::draw(ctx,
+                                   &mut image,
+                                   bbox,
+                                   graphics::Point::new(x, y),
+                                   rot)?;
+                },
+                DrawCommand::Flush => {}
+            }
+        }
 
         graphics::present(ctx);
-        // println!("Approx FPS: {}", timer::get_fps(ctx));
-        // timer::sleep_until_next_frame(ctx, 60);
+        println!("Approx FPS: {}", timer::get_fps(ctx));
+        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
-
     }
 }
 

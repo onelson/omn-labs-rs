@@ -2,10 +2,10 @@ use time;
 use specs;
 
 use systems;
+use systems::DrawCommand;
 use components;
 
 use std::sync::mpsc::Sender;
-use assets;
 
 pub type Delta = f32;
 
@@ -17,7 +17,7 @@ pub struct Game {
 
 
 impl Game {
-    pub fn new(render_tx: Sender<systems::DrawCommand>) -> Game
+    pub fn new(render_tx: Sender<DrawCommand>) -> Game
     {
         // The world is in charge of component storage, and as such contains all the game state.
         let mut world = specs::World::new();
@@ -29,7 +29,7 @@ impl Game {
 
         // entities are created by combining various components via the world
         world.create_now()
-            .with(components::Sprited { path: "rust_128x128x1.png".to_string() })
+            .with(components::Sprited { path: "resources/rust_128x128x1.png".to_string() })
             .with(components::Body { x: 150., y: 150., scale_x: 1., scale_y: 1., rotation: 0. })
             .build();
 
