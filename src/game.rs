@@ -11,8 +11,7 @@ pub type Delta = f32;
 
 
 pub struct Game {
-    pub planner: specs::Planner<Delta>,
-    last_time: u64
+    pub planner: specs::Planner<Delta>
 }
 
 
@@ -39,20 +38,15 @@ impl Game {
         plan.add_system(render_sys, "render_layer", 20);
 
         Game {
-            planner: plan,
-            last_time: time::precise_time_ns()
+            planner: plan
         }
     }
 
-    pub fn tick(&mut self) -> bool {
-
-        let new_time = time::precise_time_ns();
-        let delta = (new_time - self.last_time) as Delta / 1e9;
-        self.last_time = new_time;
+    pub fn tick(&mut self, dt: Delta) -> bool {
 
         // dispatch() tells the planner to run the registered systems in a
         // thread pool.
-        self.planner.dispatch(delta);
+        self.planner.dispatch(dt);
 
         // the wait() is like a thread.join(), and will block until the systems
         // have completed their work.

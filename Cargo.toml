@@ -13,4 +13,5 @@ rand = "*"
 ggez = "0.2.1"
 
 [replace]
-"ggez:0.2.1" = { git = 'https://github.com/ggez/ggez', branch = 'gfx' }
+#"ggez:0.2.1" = { git = 'https://github.com/ggez/ggez', branch = 'gfx' }
+"ggez:0.2.1" = { path = '../ggez' }
