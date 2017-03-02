@@ -10,8 +10,7 @@ name = "omn-labs"
 specs = "0.7.0"
 time = "*"
 rand = "*"
-ggez = "0.2.1"
+ggez = { git = 'https://github.com/ggez/ggez', branch = 'gfx' }
 
 [replace]
-"ggez:0.2.1" = { git = 'https://github.com/ggez/ggez', branch = 'gfx' }
 #"ggez:0.2.1" = { path = '../ggez' }
