@@ -60,7 +60,7 @@ impl event::EventHandler for MainState {
                     let bbox = image.rect();
                     graphics::draw(ctx,
                                    &mut image,
-                                   bbox,
+                                   graphics::Rect::one(),
                                    graphics::Point::new(x, y),
                                    rot)?;
                 },
