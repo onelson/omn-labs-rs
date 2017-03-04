@@ -11,6 +11,7 @@ specs = "0.7.0"
 time = "*"
 rand = "*"
 ggez = { git = 'https://github.com/ggez/ggez', branch = 'master' }
+rustfmt = "*"
 
 [replace]
 #"ggez:0.2.1" = { path = '../ggez' }
