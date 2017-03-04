@@ -43,7 +43,6 @@ impl MainState {
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         let delta_secs = _dt.subsec_nanos() as f32 / 1e9;
-//        println!("{:?}", delta_secs);
         self.ecs.tick(delta_secs);
         Ok(())
     }
