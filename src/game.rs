@@ -28,7 +28,7 @@ impl Game {
 
         // entities are created by combining various components via the world
         world.create_now()
-            .with(components::Sprited { path: "resources/rust_128x128x1.png".to_string() })
+            .with(components::Sprited { path: "rust_128x128x1.png".to_string() })
             .with(components::Body { x: 150., y: 150., scale_x: 1., scale_y: 1., rotation: 0. })
             .build();
 

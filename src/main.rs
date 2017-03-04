@@ -56,11 +56,9 @@ impl event::EventHandler for MainState {
                 DrawCommand::DrawTransformed {path, frame, x, y, rot, sx, sy} => {
 
                     // FIXME: use asset manager instead of reading from disk each tick
-                    let mut image = Image::new(ctx, path).unwrap();
-                    let bbox = image.rect();
+                    let image = Image::new(ctx, path).unwrap();
                     graphics::draw(ctx,
-                                   &mut image,
-                                   graphics::Rect::one(),
+                                   &image,
                                    graphics::Point::new(x, y),
                                    rot)?;
                 },
