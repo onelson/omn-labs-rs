@@ -46,6 +46,7 @@ pub struct Renderer {
     pub tx: Sender<DrawCommand>
 }
 
+
 impl specs::System<game::Delta> for Renderer
 {
     fn run(&mut self, arg: specs::RunArg, _: game::Delta) {
