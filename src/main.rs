@@ -22,7 +22,7 @@ use systems::DrawCommand;
 
 struct MainState {
     ecs: game::Game,
-    render_rx: Receiver<DrawCommand>
+    render_rx: Receiver<DrawCommand>,
 }
 
 impl MainState {
@@ -34,7 +34,7 @@ impl MainState {
 
         let s = MainState {
             render_rx: rx,
-            ecs: game::Game::new(tx)
+            ecs: game::Game::new(tx),
         };
         Ok(s)
     }
@@ -52,15 +52,12 @@ impl event::EventHandler for MainState {
 
         for cmd in self.render_rx.try_iter() {
             match cmd {
-                DrawCommand::DrawTransformed {path, frame, x, y, rot, sx, sy} => {
+                DrawCommand::DrawTransformed { path, frame, x, y, rot, sx, sy } => {
 
                     // FIXME: use asset manager instead of reading from disk each tick
                     let image = Image::new(ctx, path).unwrap();
-                    graphics::draw(ctx,
-                                   &image,
-                                   graphics::Point::new(x, y),
-                                   rot)?;
-                },
+                    graphics::draw(ctx, &image, graphics::Point::new(x, y), rot)?;
+                }
                 DrawCommand::Flush => {}
             }
         }
