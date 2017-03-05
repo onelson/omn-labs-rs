@@ -7,6 +7,7 @@ extern crate rand;
 mod components;
 mod game;
 mod systems;
+mod assets;
 
 use ggez::audio;
 use ggez::conf;
@@ -17,12 +18,14 @@ use ggez::graphics::{Color, Image};
 use ggez::timer;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
+use assets::AssetManager;
 
 use systems::DrawCommand;
 
 struct MainState {
     ecs: game::Game,
     render_rx: Receiver<DrawCommand>,
+    assets: AssetManager
 }
 
 impl MainState {
@@ -35,6 +38,7 @@ impl MainState {
         let s = MainState {
             render_rx: rx,
             ecs: game::Game::new(tx),
+            assets: AssetManager::new()
         };
         Ok(s)
     }
@@ -53,18 +57,16 @@ impl event::EventHandler for MainState {
         for cmd in self.render_rx.try_iter() {
             match cmd {
                 DrawCommand::DrawTransformed { path, frame, x, y, rot, sx, sy } => {
-
-                    // FIXME: use asset manager instead of reading from disk each tick
-                    let image = Image::new(ctx, path).unwrap();
-                    graphics::draw(ctx, &image, graphics::Point::new(x, y), rot)?;
+                    let image = self.assets.get_sprite(ctx, path.as_ref());
+                    graphics::draw(ctx, image, graphics::Point::new(x, y), rot)?;
                 }
                 DrawCommand::Flush => {}
             }
         }
 
         graphics::present(ctx);
-        // println!("Approx FPS: {}", timer::get_fps(ctx));
-        timer::sleep_until_next_frame(ctx, 60);
+         println!("Approx FPS: {}", timer::get_fps(ctx));
+//        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }
