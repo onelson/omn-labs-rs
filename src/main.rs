@@ -25,7 +25,7 @@ use systems::DrawCommand;
 struct MainState {
     ecs: game::Game,
     render_rx: Receiver<DrawCommand>,
-    assets: AssetManager
+    assets: AssetManager,
 }
 
 impl MainState {
@@ -38,7 +38,7 @@ impl MainState {
         let s = MainState {
             render_rx: rx,
             ecs: game::Game::new(tx),
-            assets: AssetManager::new()
+            assets: AssetManager::new(),
         };
         Ok(s)
     }
@@ -65,8 +65,8 @@ impl event::EventHandler for MainState {
         }
 
         graphics::present(ctx);
-         println!("Approx FPS: {}", timer::get_fps(ctx));
-//        timer::sleep_until_next_frame(ctx, 60);
+        println!("Approx FPS: {}", timer::get_fps(ctx));
+        //        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }

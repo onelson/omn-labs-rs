@@ -5,12 +5,11 @@ use std::collections::HashMap;
 
 
 pub struct AssetManager {
-    sprites: HashMap<String, Image>
+    sprites: HashMap<String, Image>,
 }
 
 
 impl AssetManager {
-
     pub fn new() -> Self {
         AssetManager { sprites: HashMap::new() }
     }
