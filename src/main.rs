@@ -81,7 +81,7 @@ pub fn main() {
 
     println!("Starting with default config: {:#?}", conf);
 
-    let ctx = &mut Context::load_from_conf("Omn Labs", conf).unwrap();
+    let ctx = &mut Context::load_from_conf("Omn Labs", "omnlabs", conf).unwrap();
 
     let state = &mut MainState::new(ctx).unwrap();
     if let Err(e) = event::run(ctx, state) {
