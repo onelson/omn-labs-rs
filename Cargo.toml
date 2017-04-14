@@ -3,8 +3,9 @@ name = "omn-labs"
 version = "0.2.0"
 authors = ["Owen Nelson <onelson@gmail.com>"]
 
-[[bin]]
-name = "omn-labs"
+[lib]
+name = "omn_labs"
+path = "src/lib.rs"
 
 [dependencies]
 specs = "0.7.0"
