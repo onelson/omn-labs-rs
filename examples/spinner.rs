@@ -10,12 +10,10 @@ use omn_labs::components;
 use omn_labs::systems;
 use omn_labs::assets;
 
-use ggez::audio;
 use ggez::conf;
 use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
-use ggez::graphics::{Color, Image};
 use ggez::timer;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::Duration;
@@ -128,7 +126,7 @@ impl event::EventHandler for MainState {
 
         for cmd in self.render_rx.try_iter() {
             match cmd {
-                DrawCommand::DrawTransformed { path, frame, x, y, rot, sx, sy } => {
+                DrawCommand::DrawTransformed { path, x, y, rot , .. } => {
                     let image = self.assets.get_sprite(ctx, path.as_ref());
                     graphics::draw(ctx, image, graphics::Point::new(x, y), rot)?;
                 }
