@@ -1,12 +1,7 @@
 use specs;
-use rand;
 use std::sync::mpsc::Sender;
 use components;
 use Delta;
-
-
-
-
 
 pub enum DrawCommand {
     DrawTransformed {

@@ -1,5 +1,5 @@
 [package]
-name = "omn-labs"
+name = "omn_labs"
 version = "0.2.0"
 authors = ["Owen Nelson <onelson@gmail.com>"]
 
@@ -9,6 +9,11 @@ path = "src/lib.rs"
 
 [dependencies]
 specs = "0.7.0"
+serde = "0.9.13"
+serde_derive = "0.9.13"
+serde_json = "0.9.10"
 time = "*"
-rand = "*"
 ggez = { git = "https://github.com/ggez/ggez.git", rev = "bc43b714aaf84990aab69301429f03274d084e89" }
+
+[dev-dependencies]
+rand = "*"
