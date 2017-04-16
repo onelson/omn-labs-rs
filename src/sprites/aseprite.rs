@@ -1,3 +1,6 @@
+//! The `aseprite` module contains types and functions extracting information from the json export
+//! data feature provided by [Aseprite](https://www.aseprite.org/).
+
 use super::{Region, FrameTag, Frame};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
