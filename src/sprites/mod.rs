@@ -38,7 +38,8 @@ impl<'a> Clip<'a> {
         self.current_time += dt;
     }
 
-    fn getFrame(self) -> &'a Frame {
+    #[allow(dead_code)]
+    fn get_frame(self) -> &'a Frame {
         let mut remaining_time = (self.current_time as Delta) - self.duration;
         for frame in self.frames.iter().cycle() {
             remaining_time -= frame.duration as Delta;
@@ -46,4 +47,9 @@ impl<'a> Clip<'a> {
         }
         unreachable!();
     }
+}
+
+#[cfg(test)]
+mod test {
+
 }

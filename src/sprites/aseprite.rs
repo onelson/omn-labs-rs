@@ -44,7 +44,9 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let aseprite_data = json!({
+        // json data exported from aseprite will have a bunch of additional fields, but the extras
+        // will be ignored.
+        let aseprite_data = r#"{
           "frames": [
             {
               "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
@@ -58,15 +60,14 @@ mod test {
           "meta": {
             "size": { "w": 64, "h": 32 },
             "frameTags": [
-              { "name": "Alpha", "from": 0, "to": 1, "direction": "forward" },
+              { "name": "Alpha", "from": 0, "to": 1, "direction": "forward" }
             ]
           },
-          // json data exported from aseprite will have a bunch of additional fields, but the extras
-          // will be ignored.
           "total": "garbage"
-        });
+        }"#;
+
         let expected = get_alpha();
-        let result: ExportData = serde_json::from_value(aseprite_data).unwrap();
+        let result: ExportData = serde_json::from_str(aseprite_data).unwrap();
         assert_eq!(expected.frames, result.frames);
         assert_eq!(expected.meta.frame_tags, result.meta.frame_tags);
         assert_eq!(expected.meta.size, result.meta.size);
