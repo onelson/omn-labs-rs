@@ -90,10 +90,6 @@ pub struct AnimationClip {
     current_time: Delta,  // represents the "play head"
     pub direction: Direction,
     pub duration: Delta,
-    // FIXME: should be a vec of durations. Should pair with a separate object with the frame data?
-    // The same frames will likely be part of other clips. Could simply index into an object
-    // representing the full sprite sheet. If we support "direction" as a playback option, we'll
-    // need something to manage the mapping of indices, especially wrt "ping-pong".
     cells: Vec<CellInfo>
 }
 
