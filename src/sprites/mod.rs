@@ -1,7 +1,7 @@
-//! The `sprites` module contains types and functions for managing "playback" of frame sequences
+//! The `sprites` module contains types and functions for managing playback of frame sequences
 //! over time.
-
 mod aseprite;
+
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Region {
@@ -20,11 +20,19 @@ pub struct Frame {
     pub bbox: Region,
 }
 
+
+pub enum Direction {
+    Forward,
+    Reverse,
+    PingPong
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct FrameTag {
     pub name: String,
     pub from: usize,
     pub to: usize,
+    // one of "forward", "reverse", "pingpong"
     pub direction: String
 }
 
@@ -35,52 +43,90 @@ pub type Delta = f32;
 /// # Examples
 ///
 /// ```
-/// use omn_labs::sprites::{AnimationClip, Delta, Frame, Region};
+/// use omn_labs::sprites::{AnimationClip, Delta, Frame, Region, Direction};
 ///
-/// let clip = AnimationClip::new(vec![
+/// let frames = vec![
 ///     Frame { duration: 1000, bbox: Region { x: 0, y: 0, width: 32, height: 32 } },
 ///     Frame { duration: 1000, bbox: Region { x: 32, y: 0, width: 32, height: 32 } },
-/// ]);
+/// ];
 ///
-/// let mut current_time = 0.;
-/// assert_eq!(clip.get_frame(current_time), 0);
-/// current_time += 800.;
-/// assert_eq!(clip.get_frame(current_time), 0);
-/// current_time += 800.;
+/// let mut clip = AnimationClip::new(
+///     &frames,
+///     Direction::Forward
+/// );
+///
+/// assert_eq!(clip.get_frame(), 0);
+/// clip.update(800.);
+/// assert_eq!(clip.get_frame(), 0);
+/// clip.update(800.);
 /// // as playback progresses, we get different frames as a return
-/// assert_eq!(clip.get_frame(current_time), 1);
-/// current_time += 800.;
+/// assert_eq!(clip.get_frame(), 1);
+/// clip.update(800.);
 /// // and as the "play head" extends beyond the total duration of the clip, it'll loop back
 /// // around to the start.
-/// assert_eq!(clip.get_frame(current_time), 0);
+/// assert_eq!(clip.get_frame(), 0);
 /// ```
-pub struct AnimationClip {
+pub struct AnimationClip<'a> {
+    current_time: Delta,  // represents the "play head"
+    pub direction: Direction,
     pub duration: Delta,
     // FIXME: should be a vec of durations. Should pair with a separate object with the frame data?
     // The same frames will likely be part of other clips. Could simply index into an object
-    // representing the full sprite sheet.
-    pub frames: Vec<Frame>
+    // representing the full sprite sheet. If we support "direction" as a playback option, we'll
+    // need something to manage the mapping of indices, especially wrt "ping-pong".
+    frames: Vec<&'a Frame>
 }
 
 
-impl AnimationClip {
-    pub fn new(frames: Vec<Frame>) -> Self {
+impl<'a> AnimationClip<'a> {
+    pub fn new(frames: &'a Vec<Frame>, direction: Direction) -> Self {
+        let frame_data: Vec<&Frame> = {
+            let mut data = Vec::new();
+            match direction {
+                Direction::Forward => {
+                    for ref frame in frames.iter() {
+                        data.push(*frame);
+                    }
+                },
+                Direction::Reverse => {
+
+                    for ref frame in frames.iter().rev() {
+                        data.push(*frame);
+                    }
+                },
+                Direction::PingPong => {
+                    // Look at what aseprite does about each end (double frame problem)
+                    for ref frame in frames.iter().chain(frames.iter().rev()) {
+                        data.push(*frame);
+                    }
+                }
+            };
+            data
+        };
+
         AnimationClip {
-            duration: frames.iter().map(|x| x.duration as Delta).sum(),
-            frames: frames
+            current_time: 0.,
+            direction: direction,
+            duration: frame_data.iter().map(|x| x.duration as Delta).sum(),
+            frames: frame_data.to_owned()
         }
     }
 
-    #[allow(dead_code)]
-    pub fn get_frame(&self, time: Delta) -> usize {
-        let mut remaining_time = {
-            if time > self.duration {
-                time - self.duration
-            } else {
-                time
-            }
-        };
+    pub fn update(&mut self, dt: Delta) {
+        self.current_time = (self.current_time + dt) % self.duration;
+    }
 
+    pub fn set_time(&mut self, time: Delta) {
+        self.current_time = time % self.duration;
+    }
+
+    pub fn reset(&mut self) {
+        self.set_time(0.);
+    }
+
+    #[allow(dead_code)]
+    pub fn get_frame(&self) -> usize {
+        let mut remaining_time = self.current_time;
         for frame in self.frames.iter().cycle() {
             remaining_time -= frame.duration as Delta;
             if remaining_time <= 0. { return self.frames.iter().position(|ref x| x == &frame).unwrap(); }
