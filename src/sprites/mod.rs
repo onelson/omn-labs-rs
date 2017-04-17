@@ -1,6 +1,11 @@
 //! The `sprites` module contains types and functions for managing playback of frame sequences
 //! over time.
 
+use std::path::Path;
+use std::fs::File;
+use std::collections::hash_map::HashMap;
+use serde_json;
+
 mod aseprite;
 
 
@@ -21,7 +26,7 @@ pub struct Frame {
     pub bbox: Region,
 }
 
-
+#[derive(Debug, Clone)]
 pub enum Direction {
     Forward,
     Reverse,
@@ -40,13 +45,16 @@ pub struct FrameTag {
 pub type Delta = f32;
 pub type FrameDuration = i32;
 
-pub struct FrameRef {
+#[derive(Debug, Clone)]
+pub struct CellInfo {
     pub idx: usize,
     pub duration: FrameDuration
 }
 
 
-/// This function adds two to its argument.
+/// AnimationClip is a group of cell indexes paired with durations such that it can track
+/// playback progress over time. It answers the question of "what subsection of a sprite sheet
+/// should I render at this time?"
 ///
 /// # Examples
 ///
@@ -63,20 +71,21 @@ pub struct FrameRef {
 ///     Direction::Forward
 /// );
 ///
-/// assert_eq!(clip.get_frame(), 0);
+/// assert_eq!(clip.get_cell(), 0);
 /// clip.update(800.);
 ///
-/// assert_eq!(clip.get_frame(), 0);
+/// assert_eq!(clip.get_cell(), 0);
 /// clip.update(800.);
 ///
 /// // as playback progresses, we get different frames as a return
-/// assert_eq!(clip.get_frame(), 1);
+/// assert_eq!(clip.get_cell(), 1);
 /// clip.update(800.);
 ///
 /// // and as the "play head" extends beyond the total duration of the clip, it'll loop back
 /// // around to the start. This wrapping behaviour can be customized via the `Direction` parameter.
-/// assert_eq!(clip.get_frame(), 0);
+/// assert_eq!(clip.get_cell(), 0);
 /// ```
+#[derive(Debug, Clone)]
 pub struct AnimationClip {
     current_time: Delta,  // represents the "play head"
     pub direction: Direction,
@@ -85,26 +94,26 @@ pub struct AnimationClip {
     // The same frames will likely be part of other clips. Could simply index into an object
     // representing the full sprite sheet. If we support "direction" as a playback option, we'll
     // need something to manage the mapping of indices, especially wrt "ping-pong".
-    frames: Vec<FrameRef>
+    cells: Vec<CellInfo>
 }
 
 
 impl AnimationClip {
-    pub fn new<'a>(frames: &'a Vec<Frame>, direction: Direction) -> Self {
+    pub fn new<'a>(frames: &'a [Frame], direction: Direction) -> Self {
 
-        let frame_data: Vec<FrameRef> = match direction {
+        let cell_info: Vec<CellInfo> = match direction {
             Direction::Forward =>
                 frames.iter().enumerate()
-                    .map(|(idx, ref x)| FrameRef { idx: idx, duration: x.duration})
+                    .map(|(idx, ref x)| CellInfo { idx: idx, duration: x.duration})
                     .collect(),
             Direction::Reverse =>
                 frames.iter().enumerate().rev()
-                    .map(|(idx, ref x)| FrameRef { idx: idx, duration: x.duration})
+                    .map(|(idx, ref x)| CellInfo { idx: idx, duration: x.duration})
                     .collect(),
             // Look at what aseprite does about each end (double frame problem)
             Direction::PingPong =>
                 frames.iter().enumerate().chain(frames.iter().enumerate().rev())
-                    .map(|(idx, ref x)| FrameRef { idx: idx, duration: x.duration})
+                    .map(|(idx, ref x)| CellInfo { idx: idx, duration: x.duration})
                     .collect(),
 
         };
@@ -112,8 +121,8 @@ impl AnimationClip {
         AnimationClip {
             current_time: 0.,
             direction: direction,
-            duration: frame_data.iter().map(|x| x.duration as Delta).sum(),
-            frames: frame_data
+            duration: cell_info.iter().map(|x| x.duration as Delta).sum(),
+            cells: cell_info
         }
     }
 
@@ -130,17 +139,98 @@ impl AnimationClip {
     }
 
     #[allow(dead_code)]
-    pub fn get_frame(&self) -> usize {
+    pub fn get_cell(&self) -> usize {
         let mut remaining_time = self.current_time;
-        for frame in self.frames.iter().cycle() {
-            remaining_time -= frame.duration as Delta;
-            if remaining_time <= 0. { return frame.idx; }
+        for cell in self.cells.iter().cycle() {
+            remaining_time -= cell.duration as Delta;
+            if remaining_time <= 0. { return cell.idx; }
         }
         unreachable!();
     }
 }
 
+pub struct ClipStore {
+    clips: HashMap<String, AnimationClip>
+}
+
+impl ClipStore {
+    // FIXME: rename method - `get()` looks like hashmap access, but this is generating a new clone!
+    pub fn get(&self, key: &str) -> Option<AnimationClip> {
+        self.clips.get(key).map(|x| x.clone())
+    }
+}
+
+pub struct SpriteSheetData {
+    pub cells: Vec<Frame>,
+    pub clips: ClipStore
+}
+
+impl SpriteSheetData {
+
+    pub fn from_json_str(json: &str) -> Self {
+        let data: aseprite::ExportData = serde_json::from_str(json).unwrap();
+        SpriteSheetData::from_aesprite_data(data)
+    }
+
+    pub fn from_json_value(json: serde_json::Value) -> Self {
+        let data: aseprite::ExportData = serde_json::from_value(json).unwrap();
+        SpriteSheetData::from_aesprite_data(data)
+    }
+
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
+        let data: aseprite::ExportData = serde_json::from_reader(File::open(path).unwrap()).unwrap();
+        SpriteSheetData::from_aesprite_data(data)
+    }
+    pub fn from_aesprite_data(data: aseprite::ExportData) -> Self {
+        let mut clips = HashMap::new();
+
+        for tag in data.meta.frame_tags {
+
+            let direction = match tag.direction.as_ref() {
+                "forward" => Direction::Forward,
+                "reverse" => Direction::Reverse,
+                "pingpong" => Direction::PingPong,
+                _ => Direction::Forward,
+            };
+            let frames: &[Frame] = &data.frames[tag.from .. tag.to];
+            clips.insert(tag.name, AnimationClip::new(frames, direction));
+        }
+
+        SpriteSheetData {
+            cells: data.frames,
+            clips: ClipStore { clips: clips }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use super::*;
 
+    #[test]
+    fn test_read_from_file() {
+        let sheet = SpriteSheetData::from_file("examples/resources/numbers/numbers-matrix-tags.array.json");
+        let alpha = sheet.clips.get("Alpha").unwrap();
+        let beta = sheet.clips.get("Beta").unwrap();
+        let gamma = sheet.clips.get("Gamma").unwrap();
+        assert_eq!(alpha.get_cell(), 0);
+        assert_eq!(beta.get_cell(), 0);
+        assert_eq!(gamma.get_cell(), 0);
+    }
+
+    #[test]
+    fn test_clips_are_distinct() {
+        let sheet = SpriteSheetData::from_file("examples/resources/numbers/numbers-matrix-tags.array.json");
+
+        // Each time we get a named clip, we're creating a new instance, and each have their
+        // own internal clock.
+        let mut alpha1 = sheet.clips.get("Alpha").unwrap();
+        let mut alpha2 = sheet.clips.get("Alpha").unwrap();
+
+        alpha1.update(20.);
+        alpha2.update(120.);
+
+        assert_eq!(alpha1.get_cell(), 0);
+        assert_eq!(alpha2.get_cell(), 1);
+    }
 }
