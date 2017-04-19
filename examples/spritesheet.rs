@@ -1,7 +1,7 @@
 
 extern crate omn_labs;
 
-use omn_labs::sprites::{SpriteSheetData, AnimationClip};
+use omn_labs::sprites::{SpriteSheetData, AnimationClip, PlayMode};
 
 extern crate time;
 extern crate specs;
@@ -10,15 +10,13 @@ extern crate rand;
 
 use omn_labs::assets;
 
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::Duration;
 
 use ggez::conf;
 use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
-use ggez::graphics::{DrawParam, Image};
-use ggez::timer;
+use ggez::graphics::DrawParam;
 use assets::AssetManager;
 
 
@@ -37,7 +35,7 @@ impl MainState {
 
         let sheet = SpriteSheetData::from_file("examples/resources/numbers/numbers-matrix-tags.array.json");
         let s = MainState {
-            clip: sheet.clips.get("Alpha").unwrap(),
+            clip: sheet.clips.create("Alpha", PlayMode::Loop).unwrap(),
             sheet: sheet,
             assets: assets,
         };
@@ -58,7 +56,7 @@ impl event::EventHandler for MainState {
         let atlas = self.assets.get_sprite(ctx, "numbers/numbers-matrix.png".as_ref());
         let w = atlas.width() as f32;
         let h = atlas.height() as f32;
-        let cell = &self.sheet.cells[self.clip.get_cell()];
+        let cell = &self.sheet.cells[self.clip.get_cell().unwrap()];
         let param = DrawParam {
             src: graphics::Rect::new(
                 cell.bbox.x as f32 / w,
@@ -71,10 +69,7 @@ impl event::EventHandler for MainState {
         };
 
         graphics::draw_ex(ctx, atlas,  param)?;
-
         graphics::present(ctx);
-//        println!("Approx FPS: {}", timer::get_fps(ctx));
-        //        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }
