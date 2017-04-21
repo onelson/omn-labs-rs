@@ -45,6 +45,8 @@ pub struct FrameTag {
 pub type Delta = f32;
 pub type FrameDuration = i32;
 
+/// `CellInfo.idx` points to an index in `SpriteSheetData.cells` and `CellInfo.duration` indicates
+/// how long this section of the texture atlas should be displayed as per an `AnimationClip`.
 #[derive(Debug, Clone)]
 pub struct CellInfo {
     pub idx: usize,
@@ -52,10 +54,18 @@ pub struct CellInfo {
 }
 
 
+/// PlayMode controls how the current frame data for a clip at a certain time is calculated with
+/// regards to the duration bounds.
 #[derive(PartialEq, Debug, Clone)]
 pub enum PlayMode {
+
+    /// `OneShot` will play start to finish, but requests for `CellInfo` after the duration will get
+    /// you None.
     OneShot,
+    /// `Hold` is similar to `OneShot` however time past the end of the duration will repeat
+    /// the final frame.
     Hold,
+    /// A `Loop` clip never ends and will return to the start of the clip when exhausted.
     Loop
 }
 
@@ -97,8 +107,8 @@ pub enum PlayMode {
 #[derive(Debug, Clone)]
 pub struct AnimationClip {
     current_time: Delta,  // represents the "play head"
-    pub direction: Direction,
-    pub duration: Delta,
+    direction: Direction,
+    duration: Delta,
     cells: Vec<CellInfo>,
     mode: PlayMode,
     drained: bool
@@ -106,6 +116,22 @@ pub struct AnimationClip {
 
 
 impl AnimationClip {
+    pub fn current_time (&self) -> Delta {
+        self.current_time
+    }
+
+    pub fn drained (&self) -> bool {
+        self.drained
+    }
+
+    pub fn direction (&self) -> &Direction {
+        &self.direction
+    }
+
+    pub fn duration (&self) -> Delta {
+        self.duration
+    }
+
     pub fn new<'a>(frames: &'a [Frame], direction: Direction, mode: PlayMode) -> Self {
 
         let cell_info: Vec<CellInfo> = match direction {
@@ -128,7 +154,7 @@ impl AnimationClip {
         AnimationClip {
             current_time: 0.,
             direction: direction,
-            duration: cell_info.iter().map(|x| x.duration as Delta).sum(),
+            duration: cell_info.iter().map(|ref x| { x.duration as Delta }).sum(),
             cells: cell_info,
             mode: mode,
             drained: false
@@ -138,30 +164,42 @@ impl AnimationClip {
     pub fn update(&mut self, dt: Delta) {
         let updated = self.current_time + dt;
 
-        self.drained = match self.mode {
-            PlayMode::OneShot | PlayMode::Hold => self.duration <= updated,
-            _ => false
+        self.current_time = if updated > self.duration {
+            self.drained = match self.mode {
+                PlayMode::OneShot | PlayMode::Hold => true,
+                _ => false
+            };
+
+            updated % self.duration
+        } else {
+            updated
         };
-
-        self.current_time = (updated) % self.duration;
     }
 
+    /// Explicitly sets the current time of the clip and adjusts the internal
+    /// `AnimationClip.drained` value based on the clip's mode and whether the new time is larger
+    /// than the duration.
     pub fn set_time(&mut self, time: Delta) {
-        self.drained = false;
-        self.current_time = time % self.duration;
+        self.current_time = if time > self.duration {
+            self.drained = self.mode != PlayMode::Loop;
+            time % self.duration
+        } else {
+            time
+        }
+
     }
 
-    pub fn reset(&mut self) {
-        self.set_time(0.);
-    }
+    /// Put the play head back to the start of the clip.
+    pub fn reset(&mut self) { self.set_time(0.); }
 
+    /// Returns the cell index for the current time of the clip or None if the clip is over.
     pub fn get_cell(&self) -> Option<usize> {
 
         if self.drained {
             return if self.mode == PlayMode::OneShot {
                 None
             } else {
-                Some(self.cells.len())
+                Some(self.cells.len() - 1)
             }
         }
 
@@ -196,8 +234,8 @@ pub struct ClipStore {
 impl ClipStore {
 
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
-        self.clips.get(key).map(|x| {
-            let mut clip = x.clone();
+        self.clips.get(key).map(|ref x| {
+            let mut clip = (*x).clone();
             clip.mode = mode;
             clip
         })
@@ -236,7 +274,7 @@ impl SpriteSheetData {
                 "pingpong" => Direction::PingPong,
                 _ => Direction::Forward,
             };
-            let frames: &[Frame] = &data.frames[tag.from .. tag.to];
+            let frames: &[Frame] = &data.frames[tag.from .. tag.to + 1];
             clips.insert(tag.name, AnimationClip::new(frames, direction, PlayMode::Loop));
         }
 
@@ -276,5 +314,95 @@ mod test {
 
         assert_eq!(alpha1.get_cell(), Some(0));
         assert_eq!(alpha2.get_cell(), Some(1));
+    }
+
+    /// Generates a new sprite sheet with a 2 frame clip.
+    fn get_two_sheet() -> SpriteSheetData {
+        SpriteSheetData::from_json_str(r#"{
+          "frames": [
+            {
+              "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
+              "duration": 10
+            },
+            {
+              "frame": { "x": 32, "y": 0, "w": 32, "h": 32 },
+              "duration": 20
+            }
+          ],
+          "meta": {
+            "size": { "w": 64, "h": 32 },
+            "frameTags": [
+              { "name": "Alpha", "from": 0, "to": 1, "direction": "forward" }
+            ]
+          }
+        }"#)
+    }
+
+    #[test]
+    fn test_clip_cell_count() {
+        let sheet = get_two_sheet();
+        let alpha1 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+        assert_eq!(alpha1.cells.len(), 2);
+    }
+
+    #[test]
+    fn test_clip_duration() {
+        let sheet = get_two_sheet();
+        let alpha1 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+        assert_eq!(alpha1.duration, 30.);
+    }
+
+    #[test]
+    fn test_oneshot_bounds() {
+        let sheet = get_two_sheet();
+
+        let mut alpha1 = sheet.clips.create("Alpha", PlayMode::OneShot).unwrap();
+
+        assert_eq!(alpha1.get_cell(), Some(0));
+
+        alpha1.update(10.);
+        assert_eq!(alpha1.get_cell(), Some(0));
+
+        alpha1.update(1.);
+        assert_eq!(alpha1.get_cell(), Some(1));
+
+        alpha1.update(19.);
+        assert_eq!(alpha1.get_cell(), Some(1));
+
+        // we should be at the end of the clip at this point
+        assert_eq!(alpha1.current_time(), alpha1.duration);
+
+
+        alpha1.update(1.);
+        assert_eq!(alpha1.get_cell(), None);
+
+    }
+
+    #[test]
+    fn test_hold_bounds() {
+        let sheet = get_two_sheet();
+
+        let mut alpha1 = sheet.clips.create("Alpha", PlayMode::Hold).unwrap();
+
+        assert_eq!(alpha1.get_cell(), Some(0));
+
+        alpha1.update(10.);
+        assert_eq!(alpha1.get_cell(), Some(0));
+
+        alpha1.update(1.);
+        assert_eq!(alpha1.get_cell(), Some(1));
+
+        alpha1.update(19.);
+        assert_eq!(alpha1.get_cell(), Some(1));
+
+        // we should be at the end of the clip at this point
+        assert_eq!(alpha1.current_time(), alpha1.duration);
+        assert_eq!(alpha1.drained(), false);
+
+        alpha1.update(1.);
+        assert_eq!(alpha1.drained(), true);
+
+        assert_eq!(alpha1.get_cell(), Some(1));
+
     }
 }
