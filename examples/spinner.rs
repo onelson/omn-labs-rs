@@ -17,7 +17,7 @@ use ggez::graphics;
 use ggez::timer;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::Duration;
-use assets::AssetManager;
+use assets::AssetBundle;
 
 use systems::DrawCommand;
 
@@ -93,7 +93,7 @@ impl Game {
 struct MainState {
     ecs: Game,
     render_rx: Receiver<DrawCommand>,
-    assets: AssetManager,
+    assets: AssetBundle,
 }
 
 
@@ -107,7 +107,7 @@ impl MainState {
         let s = MainState {
             render_rx: rx,
             ecs: Game::new(tx),
-            assets: AssetManager::new(),
+            assets: AssetBundle::new(ctx, &vec!["rust_128x128x1.png"]),
         };
         Ok(s)
     }
@@ -127,7 +127,7 @@ impl event::EventHandler for MainState {
         for cmd in self.render_rx.try_iter() {
             match cmd {
                 DrawCommand::DrawTransformed { path, x, y, rot , .. } => {
-                    let image = self.assets.get_sprite(ctx, path.as_ref());
+                    let image = self.assets.get_image(ctx, path.as_ref());
                     graphics::draw(ctx, image, graphics::Point::new(x, y), rot)?;
                 }
                 DrawCommand::Flush => {}
@@ -136,7 +136,6 @@ impl event::EventHandler for MainState {
 
         graphics::present(ctx);
         println!("Approx FPS: {}", timer::get_fps(ctx));
-        //        timer::sleep_until_next_frame(ctx, 60);
         Ok(())
     }
 }
