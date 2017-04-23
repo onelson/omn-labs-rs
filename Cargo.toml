@@ -13,7 +13,7 @@ serde = "0.9.13"
 serde_derive = "0.9.13"
 serde_json = "0.9.10"
 time = "*"
-ggez = { git = "https://github.com/ggez/ggez.git", rev = "bc43b714aaf84990aab69301429f03274d084e89" }
+ggez = { git = "https://github.com/ggez/ggez.git" }
 
 [dev-dependencies]
 rand = "*"
