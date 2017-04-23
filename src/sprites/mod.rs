@@ -87,6 +87,7 @@ pub enum PlayMode {
 /// let mut clip = AnimationClip::new(
 ///     "Two Frames".to_string(),
 ///     &frames,
+///     0,
 ///     Direction::Forward,
 ///     PlayMode::Loop
 /// );
@@ -119,21 +120,21 @@ pub struct AnimationClip {
 
 impl AnimationClip {
 
-    pub fn new<'a>(name: String, frames: &'a [Frame], direction: Direction, mode: PlayMode) -> Self {
+    pub fn new<'a>(name: String, frames: &'a [Frame], offset: usize, direction: Direction, mode: PlayMode) -> Self {
 
         let cell_info: Vec<CellInfo> = match direction {
             Direction::Forward =>
                 frames.iter().enumerate()
-                    .map(|(idx, ref x)| CellInfo { idx: idx, duration: x.duration})
+                    .map(|(idx, ref x)| CellInfo { idx: offset + idx, duration: x.duration})
                     .collect(),
             Direction::Reverse =>
                 frames.iter().enumerate().rev()
-                    .map(|(idx, ref x)| CellInfo { idx: idx, duration: x.duration})
+                    .map(|(idx, ref x)| CellInfo { idx: offset + idx, duration: x.duration})
                     .collect(),
             // Look at what aseprite does about each end (double frame problem)
             Direction::PingPong =>
                 frames.iter().enumerate().chain(frames.iter().enumerate().rev())
-                    .map(|(idx, ref x)| CellInfo { idx: idx, duration: x.duration})
+                    .map(|(idx, ref x)| CellInfo { idx: offset + idx, duration: x.duration})
                     .collect(),
 
         };
@@ -187,7 +188,7 @@ impl AnimationClip {
             return if self.mode == PlayMode::OneShot {
                 None
             } else {
-                Some(self.cells.len() - 1)
+                Some(self.cells.last().unwrap().idx)
             }
         }
 
@@ -263,7 +264,7 @@ impl SpriteSheetData {
                 _ => Direction::Forward,
             };
             let frames: &[Frame] = &data.frames[tag.from .. tag.to + 1];
-            clips.insert(tag.name.clone(), AnimationClip::new(tag.name.clone(), frames, direction, PlayMode::Loop));
+            clips.insert(tag.name.clone(), AnimationClip::new(tag.name.clone(), frames, tag.from, direction, PlayMode::Loop));
         }
 
         SpriteSheetData {
@@ -284,8 +285,8 @@ mod test {
         let beta = sheet.clips.create("Beta", PlayMode::Loop).unwrap();
         let gamma = sheet.clips.create("Gamma", PlayMode::Loop).unwrap();
         assert_eq!(alpha.get_cell(), Some(0));
-        assert_eq!(beta.get_cell(), Some(0));
-        assert_eq!(gamma.get_cell(), Some(0));
+        assert_eq!(beta.get_cell(), Some(10));
+        assert_eq!(gamma.get_cell(), Some(20));
     }
 
     #[test]
@@ -302,28 +303,6 @@ mod test {
 
         assert_eq!(alpha1.get_cell(), Some(0));
         assert_eq!(alpha2.get_cell(), Some(1));
-    }
-
-    /// Generates a new sprite sheet with a 2 frame clip.
-    fn get_two_sheet() -> SpriteSheetData {
-        SpriteSheetData::from_json_str(r#"{
-          "frames": [
-            {
-              "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
-              "duration": 10
-            },
-            {
-              "frame": { "x": 32, "y": 0, "w": 32, "h": 32 },
-              "duration": 20
-            }
-          ],
-          "meta": {
-            "size": { "w": 64, "h": 32 },
-            "frameTags": [
-              { "name": "Alpha", "from": 0, "to": 1, "direction": "forward" }
-            ]
-          }
-        }"#)
     }
 
     #[test]
@@ -391,6 +370,84 @@ mod test {
         assert_eq!(alpha1.drained, true);
 
         assert_eq!(alpha1.get_cell(), Some(1));
+    }
 
+    #[test]
+    fn test_deep_clips_report_correct_index() {
+
+        let sheet = get_pitcher_sheet();
+
+        let mut not_ready = sheet.clips.create("Not Ready", PlayMode::OneShot).unwrap();
+
+        not_ready.update(100.);
+        assert_eq!(not_ready.get_cell(), Some(18));
+        not_ready.update(100.);
+        assert_eq!(not_ready.get_cell(), Some(19));
+        not_ready.update(100.);
+        assert_eq!(not_ready.get_cell(), Some(20));
+        not_ready.update(100.);
+        assert_eq!(not_ready.get_cell(), None);
+
+//        let mut pitching = sheet.clips.create("Pitching", PlayMode::OneShot);
+
+    }
+
+    /// Generates a new sprite sheet with a 2 frame clip.
+    fn get_two_sheet() -> SpriteSheetData {
+        SpriteSheetData::from_json_str(r#"{
+          "frames": [
+            {
+              "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
+              "duration": 10
+            },
+            {
+              "frame": { "x": 32, "y": 0, "w": 32, "h": 32 },
+              "duration": 20
+            }
+          ],
+          "meta": {
+            "size": { "w": 64, "h": 32 },
+            "frameTags": [
+              { "name": "Alpha", "from": 0, "to": 1, "direction": "forward" }
+            ]
+          }
+        }"#)
+    }
+    /// a real-world usage from LD38
+    fn get_pitcher_sheet() -> SpriteSheetData {
+        SpriteSheetData::from_json_str(r#"{
+            "frames": [
+                {"frame": { "x": 0, "y": 0, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 0, "y": 257, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 0, "y": 514, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 257, "y": 0, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 257, "y": 257, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 257, "y": 514, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 514, "y": 0, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 514, "y": 257, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 514, "y": 514, "w": 256, "h": 256 }, "duration": 1000},
+                {"frame": { "x": 771, "y": 0, "w": 256, "h": 256 }, "duration": 200},
+                {"frame": { "x": 771, "y": 257, "w": 256, "h": 256 }, "duration": 400},
+                {"frame": { "x": 771, "y": 514, "w": 256, "h": 256 }, "duration": 200},
+                {"frame": { "x": 1028, "y": 0, "w": 256, "h": 256 }, "duration": 150},
+                {"frame": { "x": 1028, "y": 257, "w": 256, "h": 256 }, "duration": 150},
+                {"frame": { "x": 1028, "y": 514, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 1285, "y": 0, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 1285, "y": 257, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 1285, "y": 514, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 1542, "y": 0, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 1542, "y": 257, "w": 256, "h": 256 }, "duration": 100},
+                {"frame": { "x": 1542, "y": 514, "w": 256, "h": 256 }, "duration": 100}
+            ],
+              "meta": {
+                "size": { "w": 2048, "h": 1024 },
+                "frameTags": [
+                  { "name": "Ready", "from": 0, "to": 7, "direction": "forward" },
+                  { "name": "Winding", "from": 8, "to": 13, "direction": "forward" },
+                  { "name": "Pitching", "from": 14, "to": 17, "direction": "forward" },
+                  { "name": "Not Ready", "from": 18, "to": 20, "direction": "forward" }
+                ]
+              }
+            }"#)
     }
 }
