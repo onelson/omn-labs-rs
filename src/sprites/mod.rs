@@ -85,6 +85,7 @@ pub enum PlayMode {
 /// ];
 ///
 /// let mut clip = AnimationClip::new(
+///     "Two Frames".to_string(),
 ///     &frames,
 ///     Direction::Forward,
 ///     PlayMode::Loop
@@ -106,33 +107,19 @@ pub enum PlayMode {
 /// ```
 #[derive(Debug, Clone)]
 pub struct AnimationClip {
-    current_time: Delta,  // represents the "play head"
-    direction: Direction,
-    duration: Delta,
+    pub name: String,
+    pub current_time: Delta,  // represents the "play head"
+    pub direction: Direction,
+    pub duration: Delta,
     cells: Vec<CellInfo>,
     mode: PlayMode,
-    drained: bool
+    pub drained: bool
 }
 
 
 impl AnimationClip {
-    pub fn current_time (&self) -> Delta {
-        self.current_time
-    }
 
-    pub fn drained (&self) -> bool {
-        self.drained
-    }
-
-    pub fn direction (&self) -> &Direction {
-        &self.direction
-    }
-
-    pub fn duration (&self) -> Delta {
-        self.duration
-    }
-
-    pub fn new<'a>(frames: &'a [Frame], direction: Direction, mode: PlayMode) -> Self {
+    pub fn new<'a>(name: String, frames: &'a [Frame], direction: Direction, mode: PlayMode) -> Self {
 
         let cell_info: Vec<CellInfo> = match direction {
             Direction::Forward =>
@@ -152,6 +139,7 @@ impl AnimationClip {
         };
 
         AnimationClip {
+            name: name,
             current_time: 0.,
             direction: direction,
             duration: cell_info.iter().map(|ref x| { x.duration as Delta }).sum(),
@@ -275,7 +263,7 @@ impl SpriteSheetData {
                 _ => Direction::Forward,
             };
             let frames: &[Frame] = &data.frames[tag.from .. tag.to + 1];
-            clips.insert(tag.name, AnimationClip::new(frames, direction, PlayMode::Loop));
+            clips.insert(tag.name.clone(), AnimationClip::new(tag.name.clone(), frames, direction, PlayMode::Loop));
         }
 
         SpriteSheetData {
@@ -370,7 +358,7 @@ mod test {
         assert_eq!(alpha1.get_cell(), Some(1));
 
         // we should be at the end of the clip at this point
-        assert_eq!(alpha1.current_time(), alpha1.duration);
+        assert_eq!(alpha1.current_time, alpha1.duration);
 
 
         alpha1.update(1.);
@@ -396,11 +384,11 @@ mod test {
         assert_eq!(alpha1.get_cell(), Some(1));
 
         // we should be at the end of the clip at this point
-        assert_eq!(alpha1.current_time(), alpha1.duration);
-        assert_eq!(alpha1.drained(), false);
+        assert_eq!(alpha1.current_time, alpha1.duration);
+        assert_eq!(alpha1.drained, false);
 
         alpha1.update(1.);
-        assert_eq!(alpha1.drained(), true);
+        assert_eq!(alpha1.drained, true);
 
         assert_eq!(alpha1.get_cell(), Some(1));
 
