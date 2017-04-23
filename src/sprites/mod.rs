@@ -227,12 +227,12 @@ impl AnimationClip {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct ClipStore {
     clips: HashMap<String, AnimationClip>
 }
 
 impl ClipStore {
-
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
         self.clips.get(key).map(|ref x| {
             let mut clip = (*x).clone();
