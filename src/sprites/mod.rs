@@ -209,7 +209,7 @@ impl AnimationClip {
         }
 
         if self.mode == PlayMode::Hold {
-            Some(self.cells.len())
+            Some(self.cells.len() - 1)
         } else {
             None
         }
