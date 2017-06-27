@@ -1,4 +1,5 @@
 use specs;
+use specs::{Join, ReadStorage, WriteStorage, System};
 use std::sync::mpsc::Sender;
 use components;
 use Delta;
@@ -22,14 +23,13 @@ pub struct Renderer {
 }
 
 
-impl specs::System<Delta> for Renderer {
-    fn run(&mut self, arg: specs::RunArg, _: Delta) {
-        use specs::Join;
-        let (body, sprited) =
-            arg.fetch(|w| (w.read::<components::Body>(), w.read::<components::Sprited>()));
+impl<'a> System<'a> for Renderer {
+    type SystemData = (ReadStorage<'a, components::Body>, ReadStorage<'a, components::Sprited>);
+    fn run(&mut self, data: Self::SystemData) {
 
+        let (body, sprited) = data;
         // update entities
-        for (b, s) in (&body, &sprited).iter() {
+        for (b, s) in (&body, &sprited).join() {
             let frame_id = 0;
             self.tx
                 .send(DrawCommand::DrawTransformed {

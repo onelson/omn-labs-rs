@@ -15,25 +15,28 @@ use ggez::event;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 use ggez::timer;
+use specs::{Join, WriteStorage, DispatcherBuilder, World, Dispatcher, Fetch};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::Duration;
 use assets::AssetBundle;
 
 use systems::DrawCommand;
 
+pub struct DeltaTime(f32);
+
 #[derive(Clone)]
 pub struct Spinner {
     pub factor: f32,
 }
 
-impl specs::System<omn_labs::Delta> for Spinner {
-    fn run(&mut self, arg: specs::RunArg, dt: omn_labs::Delta) {
-        use specs::Join;
+impl<'a> specs::System<'a> for Spinner {
+    type SystemData = (WriteStorage<'a, components::Body>, Fetch<'a, DeltaTime>);
+    fn run(&mut self, data: Self::SystemData) {
 
-        let mut body = arg.fetch(|w| w.write::<components::Body>());
-
+        let (mut body, delta) = data;
+        let dt = delta.0;
         // update entities
-        for b in (&mut body).iter() {
+        for b in (&mut body).join() {
             b.rotation += dt * self.factor * rand::random::<f32>();
         }
     }
@@ -41,24 +44,23 @@ impl specs::System<omn_labs::Delta> for Spinner {
 
 
 
-pub struct Game {
-    pub planner: specs::Planner<omn_labs::Delta>,
+pub struct Game<'a, 'b> {
+    pub dispatcher: Dispatcher<'a, 'b>,
+    pub world: World,
 }
 
 
-impl Game {
-    pub fn new(render_tx: Sender<DrawCommand>) -> Game {
+impl<'a, 'b> Game<'a, 'b> {
+    pub fn new(render_tx: Sender<DrawCommand>) -> Self {
         // The world is in charge of component storage, and as such contains all the game state.
-        let mut world = specs::World::new();
+        let mut world = World::new();
         world.register::<components::Sprited>();
         world.register::<components::Body>();
-
-        let spinner_sys = Spinner { factor: 25. };
-        let render_sys = systems::Renderer { tx: render_tx.clone() };
+        world.add_resource(DeltaTime(0.));
 
         // entities are created by combining various components via the world
-        world.create_now()
-            .with(components::Sprited { path: "rust_128x128x1.png".to_string() })
+        world.create_entity()
+            .with(components::Sprited { path: "/rust_128x128x1.png".to_string() })
             .with(components::Body {
                 x: 150.,
                 y: 150.,
@@ -68,36 +70,43 @@ impl Game {
             })
             .build();
 
-        // systems are registered with a planner, which manages their execution
-        let mut plan = specs::Planner::new(world, 2);
-        plan.add_system(spinner_sys, "spinner", 10);
-        plan.add_system(render_sys, "render_layer", 20);
+        let dispatcher = DispatcherBuilder::new().add(
+            Spinner { factor: 25. },
+            "spinner",
+            &[]
+        ).add(
+            systems::Renderer { tx: render_tx.clone() },
+            "renderer",
+            &[]
+        ).build();
 
-        Game { planner: plan }
+        Game {
+            dispatcher: dispatcher,
+            world: world
+        }
     }
 
-    pub fn tick(&mut self, dt: omn_labs::Delta) -> bool {
+    pub fn tick(&mut self, dt: f32) -> () {
 
-        // dispatch() tells the planner to run the registered systems in a
-        // thread pool.
-        self.planner.dispatch(dt);
+        {
+            let mut delta = self.world.write_resource::<DeltaTime>();
+            *delta = DeltaTime(dt);
+        }
 
-        // the wait() is like a thread.join(), and will block until the systems
-        // have completed their work.
-        self.planner.wait();
-        true
+        self.dispatcher.dispatch(&mut self.world.res);
+
     }
 }
 
 
-struct MainState {
-    ecs: Game,
+struct MainState<'a, 'b> {
+    ecs: Game<'a, 'b>,
     render_rx: Receiver<DrawCommand>,
     assets: AssetBundle,
 }
 
 
-impl MainState {
+impl<'a, 'b> MainState<'a, 'b> {
     fn new(ctx: &mut Context) -> GameResult<Self> {
 
         ctx.print_resource_stats();
@@ -107,14 +116,14 @@ impl MainState {
         let s = MainState {
             render_rx: rx,
             ecs: Game::new(tx),
-            assets: AssetBundle::new(ctx, &vec!["rust_128x128x1.png"]),
+            assets: AssetBundle::new(ctx, &vec!["/rust_128x128x1.png"]),
         };
         Ok(s)
     }
 }
 
 
-impl event::EventHandler for MainState {
+impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
     fn update(&mut self, _ctx: &mut Context, _dt: Duration) -> GameResult<()> {
         let delta_secs = _dt.subsec_nanos() as f32 / 1e9;
         self.ecs.tick(delta_secs);

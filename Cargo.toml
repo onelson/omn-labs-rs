@@ -1,6 +1,6 @@
 [package]
 name = "omn_labs"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Owen Nelson <onelson@gmail.com>"]
 
 [lib]
@@ -8,12 +8,16 @@ name = "omn_labs"
 path = "src/lib.rs"
 
 [dependencies]
-specs = "0.7.0"
-serde = "0.9.13"
-serde_derive = "0.9.13"
-serde_json = "0.9.10"
+specs = "0.9"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
 time = "*"
-ggez = { git = "https://github.com/ggez/ggez.git" }
+
+[dependencies.ggez]
+version = "0.3"
+#default-features = false
+features = ["cargo-resource-root"]
 
 [dev-dependencies]
 rand = "*"
