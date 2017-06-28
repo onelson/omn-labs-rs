@@ -9,20 +9,20 @@ pub struct Dimensions {
     #[serde(rename="w")]
     pub width: i32,
     #[serde(rename="h")]
-    pub height: i32
+    pub height: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Meta {
     #[serde(rename="frameTags")]
     pub frame_tags: Vec<FrameTag>,
-    pub size: Dimensions
+    pub size: Dimensions,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ExportData {
     pub frames: Vec<Frame>,
-    pub meta: Meta
+    pub meta: Meta,
 }
 
 #[cfg(test)]
@@ -33,16 +33,36 @@ mod test {
 
     fn get_alpha() -> ExportData {
         ExportData {
-            frames: vec![
-                Frame { duration: 1000, bbox: Region { x: 0, y: 0, width: 32, height: 32 } },
-                Frame { duration: 1000, bbox: Region { x: 32, y: 0, width: 32, height: 32 } },
-            ],
+            frames: vec![Frame {
+                             duration: 1000,
+                             bbox: Region {
+                                 x: 0,
+                                 y: 0,
+                                 width: 32,
+                                 height: 32,
+                             },
+                         },
+                         Frame {
+                             duration: 1000,
+                             bbox: Region {
+                                 x: 32,
+                                 y: 0,
+                                 width: 32,
+                                 height: 32,
+                             },
+                         }],
             meta: Meta {
-                frame_tags: vec![
-                    FrameTag { name: "Alpha".to_string(), from: 0, to: 1, direction: "forward".to_string() }
-                ],
-                size: Dimensions { width: 64, height: 32 }
-            }
+                frame_tags: vec![FrameTag {
+                                     name: "Alpha".to_string(),
+                                     from: 0,
+                                     to: 1,
+                                     direction: "forward".to_string(),
+                                 }],
+                size: Dimensions {
+                    width: 64,
+                    height: 32,
+                },
+            },
         }
     }
 

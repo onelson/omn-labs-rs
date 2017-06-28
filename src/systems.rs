@@ -1,8 +1,6 @@
-use specs;
-use specs::{Join, ReadStorage, WriteStorage, System};
+use specs::{Join, ReadStorage, System};
 use std::sync::mpsc::Sender;
 use components;
-use Delta;
 
 pub enum DrawCommand {
     DrawTransformed {

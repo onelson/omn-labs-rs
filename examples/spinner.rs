@@ -70,19 +70,14 @@ impl<'a, 'b> Game<'a, 'b> {
             })
             .build();
 
-        let dispatcher = DispatcherBuilder::new().add(
-            Spinner { factor: 25. },
-            "spinner",
-            &[]
-        ).add(
-            systems::Renderer { tx: render_tx.clone() },
-            "renderer",
-            &[]
-        ).build();
+        let dispatcher = DispatcherBuilder::new()
+            .add(Spinner { factor: 25. }, "spinner", &[])
+            .add(systems::Renderer { tx: render_tx.clone() }, "renderer", &[])
+            .build();
 
         Game {
             dispatcher: dispatcher,
-            world: world
+            world: world,
         }
     }
 
@@ -135,8 +130,8 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
 
         for cmd in self.render_rx.try_iter() {
             match cmd {
-                DrawCommand::DrawTransformed { path, x, y, rot , .. } => {
-                    let image = self.assets.get_image(ctx, path.as_ref());
+                DrawCommand::DrawTransformed { path, x, y, rot, .. } => {
+                    let image = self.assets.get_image(&path);
                     graphics::draw(ctx, image, graphics::Point::new(x, y), rot)?;
                 }
                 DrawCommand::Flush => {}

@@ -16,7 +16,7 @@ pub struct Region {
     #[serde(rename="w")]
     pub width: i32,
     #[serde(rename="h")]
-    pub height: i32
+    pub height: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -30,7 +30,8 @@ pub struct Frame {
 pub enum Direction {
     Forward,
     Reverse,
-    PingPong
+    PingPong,
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -39,7 +40,7 @@ pub struct FrameTag {
     pub from: usize,
     pub to: usize,
     // one of "forward", "reverse", "pingpong"
-    pub direction: String
+    pub direction: String,
 }
 
 pub type Delta = f32;
@@ -50,15 +51,14 @@ pub type FrameDuration = i32;
 #[derive(Debug, Clone)]
 pub struct CellInfo {
     pub idx: usize,
-    pub duration: FrameDuration
+    pub duration: FrameDuration,
 }
 
 
-/// PlayMode controls how the current frame data for a clip at a certain time is calculated with
+/// `PlayMode` controls how the current frame data for a clip at a certain time is calculated with
 /// regards to the duration bounds.
 #[derive(PartialEq, Debug, Clone)]
 pub enum PlayMode {
-
     /// `OneShot` will play start to finish, but requests for `CellInfo` after the duration will get
     /// you None.
     OneShot,
@@ -66,11 +66,11 @@ pub enum PlayMode {
     /// the final frame.
     Hold,
     /// A `Loop` clip never ends and will return to the start of the clip when exhausted.
-    Loop
+    Loop,
 }
 
 
-/// AnimationClip is a group of cell indexes paired with durations such that it can track
+/// `AnimationClip` is a group of cell indexes paired with durations such that it can track
 /// playback progress over time. It answers the question of "what subsection of a sprite sheet
 /// should I render at this time?"
 ///
@@ -109,33 +109,37 @@ pub enum PlayMode {
 #[derive(Debug, Clone)]
 pub struct AnimationClip {
     pub name: String,
-    pub current_time: Delta,  // represents the "play head"
+    pub current_time: Delta, // represents the "play head"
     pub direction: Direction,
     pub duration: Delta,
     cells: Vec<CellInfo>,
     mode: PlayMode,
-    pub drained: bool
+    pub drained: bool,
 }
 
 
 impl AnimationClip {
-
-    pub fn new<'a>(name: String, frames: &'a [Frame], offset: usize, direction: Direction, mode: PlayMode) -> Self {
+    pub fn new(name: String,
+               frames: &[Frame],
+               offset: usize,
+               direction: Direction,
+               mode: PlayMode)
+               -> Self {
 
         let cell_info: Vec<CellInfo> = match direction {
-            Direction::Forward =>
-                frames.iter().enumerate()
-                    .map(|(idx, ref x)| CellInfo { idx: offset + idx, duration: x.duration})
-                    .collect(),
             Direction::Reverse =>
                 frames.iter().enumerate().rev()
-                    .map(|(idx, ref x)| CellInfo { idx: offset + idx, duration: x.duration})
+                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
                     .collect(),
             // Look at what aseprite does about each end (double frame problem)
             Direction::PingPong =>
                 frames.iter().enumerate().chain(frames.iter().enumerate().rev())
-                    .map(|(idx, ref x)| CellInfo { idx: offset + idx, duration: x.duration})
+                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
                     .collect(),
+            _ =>  // assumes Forward in the fallback case
+                frames.iter().enumerate()
+                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
+                    .collect()
 
         };
 
@@ -143,10 +147,10 @@ impl AnimationClip {
             name: name,
             current_time: 0.,
             direction: direction,
-            duration: cell_info.iter().map(|ref x| { x.duration as Delta }).sum(),
+            duration: cell_info.iter().map(|x| x.duration as Delta).sum(),
             cells: cell_info,
             mode: mode,
-            drained: false
+            drained: false,
         }
     }
 
@@ -156,7 +160,7 @@ impl AnimationClip {
         self.current_time = if updated > self.duration {
             self.drained = match self.mode {
                 PlayMode::OneShot | PlayMode::Hold => true,
-                _ => false
+                _ => false,
             };
 
             updated % self.duration
@@ -179,7 +183,9 @@ impl AnimationClip {
     }
 
     /// Put the play head back to the start of the clip.
-    pub fn reset(&mut self) { self.set_time(0.); }
+    pub fn reset(&mut self) {
+        self.set_time(0.);
+    }
 
     /// Returns the cell index for the current time of the clip or None if the clip is over.
     pub fn get_cell(&self) -> Option<usize> {
@@ -189,7 +195,7 @@ impl AnimationClip {
                 None
             } else {
                 Some(self.cells.last().unwrap().idx)
-            }
+            };
         }
 
         let mut remaining_time = self.current_time;
@@ -199,12 +205,16 @@ impl AnimationClip {
             // would return a generic iter from match and loop over after).
             for cell in self.cells.iter().cycle() {
                 remaining_time -= cell.duration as Delta;
-                if remaining_time <= 0. { return Some(cell.idx); }
+                if remaining_time <= 0. {
+                    return Some(cell.idx);
+                }
             }
         } else {
             for cell in self.cells.iter() {
                 remaining_time -= cell.duration as Delta;
-                if remaining_time <= 0. { return Some(cell.idx); }
+                if remaining_time <= 0. {
+                    return Some(cell.idx);
+                }
             }
         }
 
@@ -218,12 +228,12 @@ impl AnimationClip {
 
 #[derive(Clone, Debug)]
 pub struct ClipStore {
-    clips: HashMap<String, AnimationClip>
+    clips: HashMap<String, AnimationClip>,
 }
 
 impl ClipStore {
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
-        self.clips.get(key).map(|ref x| {
+        self.clips.get(key).map(|x| {
             let mut clip = (*x).clone();
             clip.mode = mode;
             clip
@@ -233,11 +243,10 @@ impl ClipStore {
 
 pub struct SpriteSheetData {
     pub cells: Vec<Frame>,
-    pub clips: ClipStore
+    pub clips: ClipStore,
 }
 
 impl SpriteSheetData {
-
     pub fn from_json_str(json: &str) -> Self {
         let data: aseprite::ExportData = serde_json::from_str(json).unwrap();
         SpriteSheetData::from_aesprite_data(data)
@@ -249,7 +258,8 @@ impl SpriteSheetData {
     }
 
     pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
-        let data: aseprite::ExportData = serde_json::from_reader(File::open(path).unwrap()).unwrap();
+        let data: aseprite::ExportData = serde_json::from_reader(File::open(path).unwrap())
+            .unwrap();
         SpriteSheetData::from_aesprite_data(data)
     }
     pub fn from_aesprite_data(data: aseprite::ExportData) -> Self {
@@ -261,15 +271,20 @@ impl SpriteSheetData {
                 "forward" => Direction::Forward,
                 "reverse" => Direction::Reverse,
                 "pingpong" => Direction::PingPong,
-                _ => Direction::Forward,
+                _ => Direction::Unknown,
             };
-            let frames: &[Frame] = &data.frames[tag.from .. tag.to + 1];
-            clips.insert(tag.name.clone(), AnimationClip::new(tag.name.clone(), frames, tag.from, direction, PlayMode::Loop));
+            let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
+            clips.insert(tag.name.clone(),
+                         AnimationClip::new(tag.name.clone(),
+                                            frames,
+                                            tag.from,
+                                            direction,
+                                            PlayMode::Loop));
         }
 
         SpriteSheetData {
             cells: data.frames,
-            clips: ClipStore { clips: clips }
+            clips: ClipStore { clips: clips },
         }
     }
 }
@@ -280,7 +295,7 @@ mod test {
 
     #[test]
     fn test_read_from_file() {
-        let sheet = SpriteSheetData::from_file("examples/resources/numbers/numbers-matrix-tags.array.json");
+        let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
         let alpha = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
         let beta = sheet.clips.create("Beta", PlayMode::Loop).unwrap();
         let gamma = sheet.clips.create("Gamma", PlayMode::Loop).unwrap();
@@ -291,7 +306,7 @@ mod test {
 
     #[test]
     fn test_clips_are_distinct() {
-        let sheet = SpriteSheetData::from_file("examples/resources/numbers/numbers-matrix-tags.array.json");
+        let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
 
         // Each time we get a named clip, we're creating a new instance, and each have their
         // own internal clock.
@@ -316,7 +331,7 @@ mod test {
     fn test_clip_duration() {
         let sheet = get_two_sheet();
         let alpha1 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
-        assert_eq!(alpha1.duration, 30.);
+        assert!((alpha1.duration - 30.).abs() < 0.1);
     }
 
     #[test]
@@ -337,7 +352,7 @@ mod test {
         assert_eq!(alpha1.get_cell(), Some(1));
 
         // we should be at the end of the clip at this point
-        assert_eq!(alpha1.current_time, alpha1.duration);
+        assert!((alpha1.current_time - alpha1.duration).abs() < 0.1);
 
 
         alpha1.update(1.);
@@ -363,7 +378,7 @@ mod test {
         assert_eq!(alpha1.get_cell(), Some(1));
 
         // we should be at the end of the clip at this point
-        assert_eq!(alpha1.current_time, alpha1.duration);
+        assert!((alpha1.current_time - alpha1.duration).abs() < 0.1);
         assert_eq!(alpha1.drained, false);
 
         alpha1.update(1.);
@@ -388,7 +403,7 @@ mod test {
         not_ready.update(100.);
         assert_eq!(not_ready.get_cell(), None);
 
-//        let mut pitching = sheet.clips.create("Pitching", PlayMode::OneShot);
+        //        let mut pitching = sheet.clips.create("Pitching", PlayMode::OneShot);
 
     }
 

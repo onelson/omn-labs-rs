@@ -31,9 +31,9 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<Self> {
 
         ctx.print_resource_stats();
-        let assets = AssetBundle::new(ctx, &vec!["numbers/numbers-matrix.png"]);
+        let assets = AssetBundle::new(ctx, &vec!["/numbers/numbers-matrix.png"]);
 
-        let sheet = SpriteSheetData::from_file("examples/resources/numbers/numbers-matrix-tags.array.json");
+        let sheet = SpriteSheetData::from_file("/numbers/numbers-matrix-tags.array.json");
         let s = MainState {
             clip: sheet.clips.create("Alpha", PlayMode::Loop).unwrap(),
             sheet: sheet,
@@ -53,22 +53,21 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        let atlas = self.assets.get_image(ctx, "numbers/numbers-matrix.png");
+        let atlas = self.assets.get_image("/numbers/numbers-matrix.png");
         let w = atlas.width() as f32;
         let h = atlas.height() as f32;
         let cell = &self.sheet.cells[self.clip.get_cell().unwrap()];
         let param = DrawParam {
-            src: graphics::Rect::new(
-                cell.bbox.x as f32 / w,
-                cell.bbox.y as f32 / h,
-                cell.bbox.width as f32 / w,
-                cell.bbox.height as f32 / h),
+            src: graphics::Rect::new(cell.bbox.x as f32 / w,
+                                     cell.bbox.y as f32 / h,
+                                     cell.bbox.width as f32 / w,
+                                     cell.bbox.height as f32 / h),
             dest: graphics::Point::new(160., 120.),
             scale: graphics::Point::new(1.5, 1.5),
             ..Default::default()
         };
 
-        graphics::draw_ex(ctx, atlas,  param)?;
+        graphics::draw_ex(ctx, atlas, param)?;
         graphics::present(ctx);
         Ok(())
     }

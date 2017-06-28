@@ -7,7 +7,8 @@ extern crate specs;
 extern crate ggez;
 
 extern crate serde;
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 
 pub mod components;
