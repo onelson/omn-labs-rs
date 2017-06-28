@@ -13,11 +13,14 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 time = "*"
+clippy = {version = "*", optional = true}
 
 [dependencies.ggez]
 version = "0.3"
-#default-features = false
 features = ["cargo-resource-root"]
 
 [dev-dependencies]
 rand = "*"
+
+[features]
+default = []
