@@ -1,3 +1,10 @@
+#![cfg_attr(feature="flame_it", feature(plugin, custom_attribute))]
+#![cfg_attr(feature="flame_it", plugin(flamer))]
+
+#[cfg(feature="flame_it")]
+extern crate flame;
+#[cfg(feature="flame_it")]
+use std::fs::File;
 
 extern crate omn_labs;
 
@@ -33,7 +40,7 @@ impl MainState {
         ctx.print_resource_stats();
         let assets = AssetBundle::new(ctx, &vec!["/numbers/numbers-matrix.png"]);
 
-        let sheet = SpriteSheetData::from_file("/numbers/numbers-matrix-tags.array.json");
+        let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
         let s = MainState {
             clip: sheet.clips.create("Alpha", PlayMode::Loop).unwrap(),
             sheet: sheet,
@@ -73,7 +80,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-
+#[cfg_attr(feature="flame_it", flame)]
 pub fn main() {
 
     let mut conf = conf::Conf::new();
@@ -91,4 +98,7 @@ pub fn main() {
     } else {
         println!("Game exited cleanly.");
     }
+
+    #[cfg(feature="flame_it")]
+    flame::dump_html(&mut File::create("out.html").unwrap()).unwrap();
 }

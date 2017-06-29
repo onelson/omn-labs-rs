@@ -119,6 +119,8 @@ pub struct AnimationClip {
 
 
 impl AnimationClip {
+
+    #[cfg_attr(feature="flame_it", flame)]
     pub fn new(name: String,
                frames: &[Frame],
                offset: usize,
@@ -154,6 +156,7 @@ impl AnimationClip {
         }
     }
 
+    #[cfg_attr(feature="flame_it", flame)]
     pub fn update(&mut self, dt: Delta) {
         let updated = self.current_time + dt;
 
@@ -188,6 +191,7 @@ impl AnimationClip {
     }
 
     /// Returns the cell index for the current time of the clip or None if the clip is over.
+    #[cfg_attr(feature="flame_it", flame)]
     pub fn get_cell(&self) -> Option<usize> {
 
         if self.drained {
@@ -232,6 +236,7 @@ pub struct ClipStore {
 }
 
 impl ClipStore {
+    #[cfg_attr(feature="flame_it", flame)]
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
         self.clips.get(key).map(|x| {
             let mut clip = (*x).clone();
@@ -262,6 +267,8 @@ impl SpriteSheetData {
             .unwrap();
         SpriteSheetData::from_aesprite_data(data)
     }
+
+    #[cfg_attr(feature="flame_it", flame)]
     pub fn from_aesprite_data(data: aseprite::ExportData) -> Self {
         let mut clips = HashMap::new();
 
