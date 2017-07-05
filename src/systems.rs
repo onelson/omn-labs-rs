@@ -22,7 +22,10 @@ pub struct Renderer {
 
 
 impl<'a> System<'a> for Renderer {
-    type SystemData = (ReadStorage<'a, components::Body>, ReadStorage<'a, components::Sprited>);
+    type SystemData = (
+        ReadStorage<'a, components::Body>,
+        ReadStorage<'a, components::Sprited>,
+    );
     fn run(&mut self, data: Self::SystemData) {
 
         let (body, sprited) = data;

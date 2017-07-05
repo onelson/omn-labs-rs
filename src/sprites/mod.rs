@@ -13,16 +13,16 @@ mod aseprite;
 pub struct Region {
     pub x: i32,
     pub y: i32,
-    #[serde(rename="w")]
+    #[serde(rename = "w")]
     pub width: i32,
-    #[serde(rename="h")]
+    #[serde(rename = "h")]
     pub height: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Frame {
     pub duration: i32,
-    #[serde(rename="frame")]
+    #[serde(rename = "frame")]
     pub bbox: Region,
 }
 
@@ -119,14 +119,14 @@ pub struct AnimationClip {
 
 
 impl AnimationClip {
-
-    #[cfg_attr(feature="flame_it", flame)]
-    pub fn new(name: String,
-               frames: &[Frame],
-               offset: usize,
-               direction: Direction,
-               mode: PlayMode)
-               -> Self {
+    #[cfg_attr(feature = "flame_it", flame)]
+    pub fn new(
+        name: String,
+        frames: &[Frame],
+        offset: usize,
+        direction: Direction,
+        mode: PlayMode,
+    ) -> Self {
 
         let cell_info: Vec<CellInfo> = match direction {
             Direction::Reverse =>
@@ -156,7 +156,7 @@ impl AnimationClip {
         }
     }
 
-    #[cfg_attr(feature="flame_it", flame)]
+    #[cfg_attr(feature = "flame_it", flame)]
     pub fn update(&mut self, dt: Delta) {
         let updated = self.current_time + dt;
 
@@ -191,7 +191,7 @@ impl AnimationClip {
     }
 
     /// Returns the cell index for the current time of the clip or None if the clip is over.
-    #[cfg_attr(feature="flame_it", flame)]
+    #[cfg_attr(feature = "flame_it", flame)]
     pub fn get_cell(&self) -> Option<usize> {
 
         if self.drained {
@@ -236,7 +236,7 @@ pub struct ClipStore {
 }
 
 impl ClipStore {
-    #[cfg_attr(feature="flame_it", flame)]
+    #[cfg_attr(feature = "flame_it", flame)]
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
         self.clips.get(key).map(|x| {
             let mut clip = (*x).clone();
@@ -268,7 +268,7 @@ impl SpriteSheetData {
         SpriteSheetData::from_aesprite_data(data)
     }
 
-    #[cfg_attr(feature="flame_it", flame)]
+    #[cfg_attr(feature = "flame_it", flame)]
     pub fn from_aesprite_data(data: aseprite::ExportData) -> Self {
         let mut clips = HashMap::new();
 
@@ -281,12 +281,16 @@ impl SpriteSheetData {
                 _ => Direction::Unknown,
             };
             let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
-            clips.insert(tag.name.clone(),
-                         AnimationClip::new(tag.name.clone(),
-                                            frames,
-                                            tag.from,
-                                            direction,
-                                            PlayMode::Loop));
+            clips.insert(
+                tag.name.clone(),
+                AnimationClip::new(
+                    tag.name.clone(),
+                    frames,
+                    tag.from,
+                    direction,
+                    PlayMode::Loop,
+                ),
+            );
         }
 
         SpriteSheetData {
@@ -416,7 +420,8 @@ mod test {
 
     /// Generates a new sprite sheet with a 2 frame clip.
     fn get_two_sheet() -> SpriteSheetData {
-        SpriteSheetData::from_json_str(r#"{
+        SpriteSheetData::from_json_str(
+            r#"{
           "frames": [
             {
               "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
@@ -433,11 +438,13 @@ mod test {
               { "name": "Alpha", "from": 0, "to": 1, "direction": "forward" }
             ]
           }
-        }"#)
+        }"#,
+        )
     }
     /// a real-world usage from LD38
     fn get_pitcher_sheet() -> SpriteSheetData {
-        SpriteSheetData::from_json_str(r#"{
+        SpriteSheetData::from_json_str(
+            r#"{
             "frames": [
                 {"frame": { "x": 0, "y": 0, "w": 256, "h": 256 }, "duration": 100},
                 {"frame": { "x": 0, "y": 257, "w": 256, "h": 256 }, "duration": 100},
@@ -470,6 +477,7 @@ mod test {
                   { "name": "Not Ready", "from": 18, "to": 20, "direction": "forward" }
                 ]
               }
-            }"#)
+            }"#,
+        )
     }
 }

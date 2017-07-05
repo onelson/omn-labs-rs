@@ -8,7 +8,9 @@ use omn_labs::sprites::{SpriteSheetData, PlayMode};
 
 #[bench]
 fn load_from_file(b: &mut test::Bencher) {
-    b.iter(|| SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json"));
+    b.iter(|| {
+        SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json")
+    });
 }
 
 #[bench]

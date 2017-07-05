@@ -6,15 +6,15 @@ use super::{Region, FrameTag, Frame};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Dimensions {
-    #[serde(rename="w")]
+    #[serde(rename = "w")]
     pub width: i32,
-    #[serde(rename="h")]
+    #[serde(rename = "h")]
     pub height: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Meta {
-    #[serde(rename="frameTags")]
+    #[serde(rename = "frameTags")]
     pub frame_tags: Vec<FrameTag>,
     pub size: Dimensions,
 }
@@ -33,31 +33,35 @@ mod test {
 
     fn get_alpha() -> ExportData {
         ExportData {
-            frames: vec![Frame {
-                             duration: 1000,
-                             bbox: Region {
-                                 x: 0,
-                                 y: 0,
-                                 width: 32,
-                                 height: 32,
-                             },
-                         },
-                         Frame {
-                             duration: 1000,
-                             bbox: Region {
-                                 x: 32,
-                                 y: 0,
-                                 width: 32,
-                                 height: 32,
-                             },
-                         }],
+            frames: vec![
+                Frame {
+                    duration: 1000,
+                    bbox: Region {
+                        x: 0,
+                        y: 0,
+                        width: 32,
+                        height: 32,
+                    },
+                },
+                Frame {
+                    duration: 1000,
+                    bbox: Region {
+                        x: 32,
+                        y: 0,
+                        width: 32,
+                        height: 32,
+                    },
+                },
+            ],
             meta: Meta {
-                frame_tags: vec![FrameTag {
-                                     name: "Alpha".to_string(),
-                                     from: 0,
-                                     to: 1,
-                                     direction: "forward".to_string(),
-                                 }],
+                frame_tags: vec![
+                    FrameTag {
+                        name: "Alpha".to_string(),
+                        from: 0,
+                        to: 1,
+                        direction: "forward".to_string(),
+                    },
+                ],
                 size: Dimensions {
                     width: 64,
                     height: 32,

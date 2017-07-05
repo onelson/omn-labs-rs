@@ -59,8 +59,11 @@ impl<'a, 'b> Game<'a, 'b> {
         world.add_resource(DeltaTime(0.));
 
         // entities are created by combining various components via the world
-        world.create_entity()
-            .with(components::Sprited { path: "/rust_128x128x1.png".to_string() })
+        world
+            .create_entity()
+            .with(components::Sprited {
+                path: "/rust_128x128x1.png".to_string(),
+            })
             .with(components::Body {
                 x: 150.,
                 y: 150.,

@@ -5,7 +5,7 @@
 #![cfg_attr(feature="flame_it", feature(plugin, custom_attribute))]
 #![cfg_attr(feature="flame_it", plugin(flamer))]
 
-#[cfg(feature="flame_it")]
+#[cfg(feature = "flame_it")]
 extern crate flame;
 
 

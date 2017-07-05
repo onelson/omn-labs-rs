@@ -1,9 +1,9 @@
 #![cfg_attr(feature="flame_it", feature(plugin, custom_attribute))]
 #![cfg_attr(feature="flame_it", plugin(flamer))]
 
-#[cfg(feature="flame_it")]
+#[cfg(feature = "flame_it")]
 extern crate flame;
-#[cfg(feature="flame_it")]
+#[cfg(feature = "flame_it")]
 use std::fs::File;
 
 extern crate omn_labs;
@@ -65,10 +65,12 @@ impl event::EventHandler for MainState {
         let h = atlas.height() as f32;
         let cell = &self.sheet.cells[self.clip.get_cell().unwrap()];
         let param = DrawParam {
-            src: graphics::Rect::new(cell.bbox.x as f32 / w,
-                                     cell.bbox.y as f32 / h,
-                                     cell.bbox.width as f32 / w,
-                                     cell.bbox.height as f32 / h),
+            src: graphics::Rect::new(
+                cell.bbox.x as f32 / w,
+                cell.bbox.y as f32 / h,
+                cell.bbox.width as f32 / w,
+                cell.bbox.height as f32 / h,
+            ),
             dest: graphics::Point::new(160., 120.),
             scale: graphics::Point::new(1.5, 1.5),
             ..Default::default()
@@ -80,7 +82,7 @@ impl event::EventHandler for MainState {
     }
 }
 
-#[cfg_attr(feature="flame_it", flame)]
+#[cfg_attr(feature = "flame_it", flame)]
 pub fn main() {
 
     let mut conf = conf::Conf::new();
@@ -99,6 +101,5 @@ pub fn main() {
         println!("Game exited cleanly.");
     }
 
-    #[cfg(feature="flame_it")]
-    flame::dump_html(&mut File::create("out.html").unwrap()).unwrap();
+    #[cfg(feature = "flame_it")] flame::dump_html(&mut File::create("out.html").unwrap()).unwrap();
 }
