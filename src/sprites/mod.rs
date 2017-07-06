@@ -69,6 +69,47 @@ pub enum PlayMode {
     Loop,
 }
 
+#[derive(Debug)]
+pub struct AnimationClipTemplate {
+    pub cells: Vec<CellInfo>,
+    pub direction: Direction,
+    pub duration: Delta,
+    pub name: String,
+}
+
+impl AnimationClipTemplate {
+    pub fn new(
+        name: String,
+        frames: &[Frame],
+        direction: Direction,
+        offset: usize,
+    ) -> Self {
+
+        let cell_info: Vec<CellInfo> = match direction {
+            Direction::Reverse =>
+                frames.iter().enumerate().rev()
+                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
+                    .collect(),
+            // Look at what aseprite does about each end (double frame problem)
+            Direction::PingPong =>
+                frames.iter().enumerate().chain(frames.iter().enumerate().rev())
+                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
+                    .collect(),
+            _ =>  // assumes Forward in the fallback case
+                frames.iter().enumerate()
+                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
+                    .collect()
+
+        };
+        let duration = cell_info.iter().map(|ref x| x.duration as Delta).sum();
+        Self {
+            name: name,
+            cells: cell_info,
+            direction: direction,
+            duration: duration,
+        }
+    }
+}
 
 /// `AnimationClip` is a group of cell indexes paired with durations such that it can track
 /// playback progress over time. It answers the question of "what subsection of a sprite sheet
@@ -107,51 +148,28 @@ pub enum PlayMode {
 /// assert_eq!(clip.get_cell(), Some(0));
 /// ```
 #[derive(Debug, Clone)]
-pub struct AnimationClip {
-    pub name: String,
+pub struct AnimationClip<'a> {
+    pub name: &'a str,
     pub current_time: Delta, // represents the "play head"
-    pub direction: Direction,
-    pub duration: Delta,
-    cells: Vec<CellInfo>,
+    pub direction: &'a Direction,
+    pub duration: &'a Delta,
+    cells: &'a[CellInfo],
     mode: PlayMode,
     pub drained: bool,
 }
 
 
-impl AnimationClip {
+impl<'a> AnimationClip<'a> {
     #[cfg_attr(feature = "flame_it", flame)]
-    pub fn new(
-        name: String,
-        frames: &[Frame],
-        offset: usize,
-        direction: Direction,
-        mode: PlayMode,
-    ) -> Self {
-
-        let cell_info: Vec<CellInfo> = match direction {
-            Direction::Reverse =>
-                frames.iter().enumerate().rev()
-                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
-                    .collect(),
-            // Look at what aseprite does about each end (double frame problem)
-            Direction::PingPong =>
-                frames.iter().enumerate().chain(frames.iter().enumerate().rev())
-                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
-                    .collect(),
-            _ =>  // assumes Forward in the fallback case
-                frames.iter().enumerate()
-                    .map(|(idx, x)| CellInfo { idx: offset + idx, duration: x.duration})
-                    .collect()
-
-        };
+    pub fn new(template: &'a AnimationClipTemplate, play_mode: PlayMode) -> Self {
 
         AnimationClip {
-            name: name,
+            name: &template.name,
             current_time: 0.,
-            direction: direction,
-            duration: cell_info.iter().map(|x| x.duration as Delta).sum(),
-            cells: cell_info,
-            mode: mode,
+            direction: &template.direction,
+            duration: &template.duration,
+            cells: &template.cells,
+            mode: play_mode,
             drained: false,
         }
     }
@@ -160,7 +178,7 @@ impl AnimationClip {
     pub fn update(&mut self, dt: Delta) {
         let updated = self.current_time + dt;
 
-        self.current_time = if updated > self.duration {
+        self.current_time = if updated > (*self.duration) {
             self.drained = match self.mode {
                 PlayMode::OneShot | PlayMode::Hold => true,
                 _ => false,
@@ -176,7 +194,7 @@ impl AnimationClip {
     /// `AnimationClip.drained` value based on the clip's mode and whether the new time is larger
     /// than the duration.
     pub fn set_time(&mut self, time: Delta) {
-        self.current_time = if time > self.duration {
+        self.current_time = if time > (*self.duration) {
             self.drained = self.mode != PlayMode::Loop;
             time % self.duration
         } else {
@@ -230,18 +248,16 @@ impl AnimationClip {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ClipStore {
-    clips: HashMap<String, AnimationClip>,
+    clips: HashMap<String, AnimationClipTemplate>,
 }
 
 impl ClipStore {
     #[cfg_attr(feature = "flame_it", flame)]
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
         self.clips.get(key).map(|x| {
-            let mut clip = (*x).clone();
-            clip.mode = mode;
-            clip
+            AnimationClip::new(&x, mode)
         })
     }
 }
@@ -254,48 +270,52 @@ pub struct SpriteSheetData {
 impl SpriteSheetData {
     pub fn from_json_str(json: &str) -> Self {
         let data: aseprite::ExportData = serde_json::from_str(json).unwrap();
-        SpriteSheetData::from_aesprite_data(data)
+        SpriteSheetData::from_aesprite_data(&data)
     }
 
     pub fn from_json_value(json: serde_json::Value) -> Self {
         let data: aseprite::ExportData = serde_json::from_value(json).unwrap();
-        SpriteSheetData::from_aesprite_data(data)
+        SpriteSheetData::from_aesprite_data(&data)
     }
 
     pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
         let data: aseprite::ExportData = serde_json::from_reader(File::open(path).unwrap())
             .unwrap();
-        SpriteSheetData::from_aesprite_data(data)
+        SpriteSheetData::from_aesprite_data(&data)
     }
 
     #[cfg_attr(feature = "flame_it", flame)]
-    pub fn from_aesprite_data(data: aseprite::ExportData) -> Self {
-        let mut clips = HashMap::new();
-
-        for tag in data.meta.frame_tags {
-
-            let direction = match tag.direction.as_ref() {
-                "forward" => Direction::Forward,
-                "reverse" => Direction::Reverse,
-                "pingpong" => Direction::PingPong,
-                _ => Direction::Unknown,
-            };
-            let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
-            clips.insert(
-                tag.name.clone(),
-                AnimationClip::new(
-                    tag.name.clone(),
-                    frames,
-                    tag.from,
-                    direction,
-                    PlayMode::Loop,
-                ),
-            );
-        }
-
+    pub fn from_aesprite_data(data: &aseprite::ExportData) -> Self {
+        let tags = {
+            (*data).meta.frame_tags.iter()
+        };
         SpriteSheetData {
-            cells: data.frames,
-            clips: ClipStore { clips: clips },
+            cells: data.frames.to_owned(),
+            clips: ClipStore { clips: {
+                let mut clips = HashMap::new();
+
+                for tag in tags {
+
+                    let direction = match tag.direction.as_ref() {
+                        "forward" => Direction::Forward,
+                        "reverse" => Direction::Reverse,
+                        "pingpong" => Direction::PingPong,
+                        _ => Direction::Unknown,
+                    };
+                    let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
+                    clips.insert(
+                        tag.name.clone(),
+                        AnimationClipTemplate::new(
+                            tag.name.clone(),
+                            frames,
+                            direction,
+                            tag.from,
+                        ),
+                    );
+                }
+
+                clips
+            }},
         }
     }
 }
