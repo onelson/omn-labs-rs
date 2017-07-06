@@ -25,3 +25,13 @@ fn clip_update(b: &mut test::Bencher) {
     let mut clip = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
     b.iter(|| clip.update(800.));
 }
+
+#[bench]
+fn clip_get_cell(b: &mut test::Bencher) {
+    let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
+    let mut clip = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+    b.iter(|| {
+        clip.update(800.);
+        clip.get_cell()
+    });
+}
