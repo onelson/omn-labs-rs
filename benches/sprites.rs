@@ -1,7 +1,6 @@
 #![feature(test)]
 
 extern crate test;
-
 extern crate omn_labs;
 
 use omn_labs::sprites::{SpriteSheetData, PlayMode};

@@ -78,12 +78,7 @@ pub struct AnimationClipTemplate {
 }
 
 impl AnimationClipTemplate {
-    pub fn new(
-        name: String,
-        frames: &[Frame],
-        direction: Direction,
-        offset: usize,
-    ) -> Self {
+    pub fn new(name: String, frames: &[Frame], direction: Direction, offset: usize) -> Self {
 
         let cell_info: Vec<CellInfo> = match direction {
             Direction::Reverse =>
@@ -101,7 +96,7 @@ impl AnimationClipTemplate {
                     .collect()
 
         };
-        let duration = cell_info.iter().map(|ref x| x.duration as Delta).sum();
+        let duration = cell_info.iter().map(|x| x.duration as Delta).sum();
         Self {
             name: name,
             cells: cell_info,
@@ -153,7 +148,7 @@ pub struct AnimationClip<'a> {
     pub current_time: Delta, // represents the "play head"
     pub direction: &'a Direction,
     pub duration: &'a Delta,
-    cells: &'a[CellInfo],
+    cells: &'a [CellInfo],
     mode: PlayMode,
     pub drained: bool,
 }
@@ -250,15 +245,13 @@ impl<'a> AnimationClip<'a> {
 
 #[derive(Debug)]
 pub struct ClipStore {
-    clips: HashMap<String, AnimationClipTemplate>,
+    store: HashMap<String, AnimationClipTemplate>,
 }
 
 impl ClipStore {
     #[cfg_attr(feature = "flame_it", flame)]
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
-        self.clips.get(key).map(|x| {
-            AnimationClip::new(&x, mode)
-        })
+        self.store.get(key).map(|x| AnimationClip::new(x, mode))
     }
 }
 
@@ -286,36 +279,36 @@ impl SpriteSheetData {
 
     #[cfg_attr(feature = "flame_it", flame)]
     pub fn from_aesprite_data(data: &aseprite::ExportData) -> Self {
-        let tags = {
-            (*data).meta.frame_tags.iter()
-        };
+        let tags = { (*data).meta.frame_tags.iter() };
         SpriteSheetData {
             cells: data.frames.to_owned(),
-            clips: ClipStore { clips: {
-                let mut clips = HashMap::new();
+            clips: ClipStore {
+                store: {
+                    let mut clips = HashMap::new();
 
-                for tag in tags {
+                    for tag in tags {
 
-                    let direction = match tag.direction.as_ref() {
-                        "forward" => Direction::Forward,
-                        "reverse" => Direction::Reverse,
-                        "pingpong" => Direction::PingPong,
-                        _ => Direction::Unknown,
-                    };
-                    let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
-                    clips.insert(
-                        tag.name.clone(),
-                        AnimationClipTemplate::new(
+                        let direction = match tag.direction.as_ref() {
+                            "forward" => Direction::Forward,
+                            "reverse" => Direction::Reverse,
+                            "pingpong" => Direction::PingPong,
+                            _ => Direction::Unknown,
+                        };
+                        let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
+                        clips.insert(
                             tag.name.clone(),
-                            frames,
-                            direction,
-                            tag.from,
-                        ),
-                    );
-                }
+                            AnimationClipTemplate::new(
+                                tag.name.clone(),
+                                frames,
+                                direction,
+                                tag.from,
+                            ),
+                        );
+                    }
 
-                clips
-            }},
+                    clips
+                },
+            },
         }
     }
 }
