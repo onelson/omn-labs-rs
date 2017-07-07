@@ -10,10 +10,4 @@ OmnLabs is, in theory, a library of reusable "game stuff" built on top of [ggez]
 under `src/` and prototypes etc should be coded as standalone programs under `examples/`.  Examples can be run via 
 `cargo run --example <name>` where name is the name of the module (eg `cargo run --example spinner`). 
 
-## Running
-
-When running the app via `cargo run`, you have to copy or symlink the `resources` directory to the build location, 
-for example `ln -s resources target/debug/`. Failing to do so will result in a panic from `assets.rs` when the module 
-attempts to read a file it cannot locate. The error should contain hints for where it is expecting the files to be.  
-
 [ggez]: https://github.com/ggez/ggez
