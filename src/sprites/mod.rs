@@ -155,7 +155,6 @@ pub struct AnimationClip<'a> {
 
 
 impl<'a> AnimationClip<'a> {
-    #[cfg_attr(feature = "flame_it", flame)]
     pub fn new(template: &'a AnimationClipTemplate, play_mode: PlayMode) -> Self {
 
         AnimationClip {
@@ -169,7 +168,6 @@ impl<'a> AnimationClip<'a> {
         }
     }
 
-    #[cfg_attr(feature = "flame_it", flame)]
     pub fn update(&mut self, dt: Delta) {
         let updated = self.current_time + dt;
 
@@ -204,7 +202,6 @@ impl<'a> AnimationClip<'a> {
     }
 
     /// Returns the cell index for the current time of the clip or None if the clip is over.
-    #[cfg_attr(feature = "flame_it", flame)]
     pub fn get_cell(&self) -> Option<usize> {
 
         if self.drained {
@@ -249,7 +246,6 @@ pub struct ClipStore {
 }
 
 impl ClipStore {
-    #[cfg_attr(feature = "flame_it", flame)]
     pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
         self.store.get(key).map(|x| AnimationClip::new(x, mode))
     }
@@ -277,7 +273,6 @@ impl SpriteSheetData {
         SpriteSheetData::from_aesprite_data(&data)
     }
 
-    #[cfg_attr(feature = "flame_it", flame)]
     pub fn from_aesprite_data(data: &aseprite::ExportData) -> Self {
         let tags = { (*data).meta.frame_tags.iter() };
         SpriteSheetData {
