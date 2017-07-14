@@ -4,3 +4,4 @@ target/
 *.iml
 *.rs.bk
 Cargo.lock
+.s3
