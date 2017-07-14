@@ -51,7 +51,9 @@ impl AssetBundle {
         for src in image_sources {
             image_cache.insert(src.to_string(), Self::load_image(ctx, src));
         }
-        AssetBundle { images: image_cache }
+        AssetBundle {
+            images: image_cache,
+        }
     }
 
     pub fn get_image(&self, path: &str) -> &Image {

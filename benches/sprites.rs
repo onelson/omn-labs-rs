@@ -3,32 +3,35 @@
 extern crate test;
 extern crate omn_labs;
 
-use omn_labs::sprites::{SpriteSheetData, PlayMode};
+use omn_labs::sprites::{ClipStore, SpriteSheetData, PlayMode};
+
 
 #[bench]
-fn load_from_file(b: &mut test::Bencher) {
-    b.iter(|| {
-        SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json")
-    });
+fn create_clip_store(b: &mut test::Bencher) {
+    let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
+    b.iter(|| ClipStore::new(&sheet));
 }
 
 #[bench]
 fn create_clip_instance(b: &mut test::Bencher) {
     let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
-    b.iter(|| sheet.clips.create("Alpha", PlayMode::Loop).unwrap());
+    let clips = ClipStore::new(&sheet);
+    b.iter(|| clips.create("Alpha", PlayMode::Loop).unwrap());
 }
 
 #[bench]
 fn clip_update(b: &mut test::Bencher) {
     let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
-    let mut clip = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+    let clips = ClipStore::new(&sheet);
+    let mut clip = clips.create("Alpha", PlayMode::Loop).unwrap();
     b.iter(|| clip.update(800.));
 }
 
 #[bench]
 fn clip_get_cell(b: &mut test::Bencher) {
     let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
-    let mut clip = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+    let clips = ClipStore::new(&sheet);
+    let mut clip = clips.create("Alpha", PlayMode::Loop).unwrap();
     b.iter(|| {
         clip.update(800.);
         clip.get_cell()

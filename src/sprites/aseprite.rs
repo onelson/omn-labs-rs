@@ -1,6 +1,10 @@
 //! The `aseprite` module contains types and functions extracting information from the json export
 //! data feature provided by [Aseprite](https://www.aseprite.org/).
 
+use std::fs::File;
+use std::path::Path;
+use serde_json;
+
 #[allow(unused_imports)]
 use super::{Region, FrameTag, Frame};
 
@@ -23,6 +27,20 @@ pub struct Meta {
 pub struct ExportData {
     pub frames: Vec<Frame>,
     pub meta: Meta,
+}
+
+impl ExportData {
+    pub fn parse_str(json: &str) -> ExportData {
+        serde_json::from_str(json).unwrap()
+    }
+
+    pub fn from_file<P: AsRef<Path>>(path: P) -> ExportData {
+        serde_json::from_reader(File::open(path).unwrap()).unwrap()
+    }
+
+    pub fn from_json_value(json: serde_json::Value) -> ExportData {
+        serde_json::from_value(json).unwrap()
+    }
 }
 
 #[cfg(test)]

@@ -75,7 +75,13 @@ impl<'a, 'b> Game<'a, 'b> {
 
         let dispatcher = DispatcherBuilder::new()
             .add(Spinner { factor: 25. }, "spinner", &[])
-            .add(systems::Renderer { tx: render_tx.clone() }, "renderer", &[])
+            .add(
+                systems::Renderer {
+                    tx: render_tx.clone(),
+                },
+                "renderer",
+                &[],
+            )
             .build();
 
         Game {
@@ -133,7 +139,9 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
 
         for cmd in self.render_rx.try_iter() {
             match cmd {
-                DrawCommand::DrawTransformed { path, x, y, rot, .. } => {
+                DrawCommand::DrawTransformed {
+                    path, x, y, rot, ..
+                } => {
                     let image = self.assets.get_image(&path);
                     graphics::draw(ctx, image, graphics::Point::new(x, y), rot)?;
                 }

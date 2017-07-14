@@ -1,12 +1,8 @@
 //! The `sprites` module contains types and functions for managing playback of frame sequences
 //! over time.
 
-use std::path::Path;
-use std::fs::File;
 use std::collections::hash_map::HashMap;
-use serde_json;
-
-mod aseprite;
+pub mod aseprite;
 
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -79,7 +75,6 @@ pub struct AnimationClipTemplate {
 
 impl AnimationClipTemplate {
     pub fn new(name: String, frames: &[Frame], direction: Direction, offset: usize) -> Self {
-
         let cell_info: Vec<CellInfo> = match direction {
             Direction::Reverse =>
                 frames.iter().enumerate().rev()
@@ -143,26 +138,26 @@ impl AnimationClipTemplate {
 /// assert_eq!(clip.get_cell(), Some(0));
 /// ```
 #[derive(Debug, Clone)]
-pub struct AnimationClip<'a> {
-    pub name: &'a str,
+pub struct AnimationClip {
+    pub name: String,
     pub current_time: Delta, // represents the "play head"
-    pub direction: &'a Direction,
-    pub duration: &'a Delta,
-    cells: &'a [CellInfo],
+    pub direction: Direction,
+    pub duration: Delta,
+    cells: Vec<CellInfo>,
     mode: PlayMode,
     pub drained: bool,
 }
 
 
-impl<'a> AnimationClip<'a> {
-    pub fn new(template: &'a AnimationClipTemplate, play_mode: PlayMode) -> Self {
+impl AnimationClip {
+    pub fn new(template: &AnimationClipTemplate, play_mode: PlayMode) -> Self {
 
         AnimationClip {
-            name: &template.name,
+            name: template.name.to_owned(),
             current_time: 0.,
-            direction: &template.direction,
-            duration: &template.duration,
-            cells: &template.cells,
+            direction: template.direction.clone(),
+            duration: template.duration,
+            cells: template.cells.clone(),
             mode: play_mode,
             drained: false,
         }
@@ -171,7 +166,7 @@ impl<'a> AnimationClip<'a> {
     pub fn update(&mut self, dt: Delta) {
         let updated = self.current_time + dt;
 
-        self.current_time = if updated > (*self.duration) {
+        self.current_time = if updated > self.duration {
             self.drained = match self.mode {
                 PlayMode::OneShot | PlayMode::Hold => true,
                 _ => false,
@@ -187,7 +182,7 @@ impl<'a> AnimationClip<'a> {
     /// `AnimationClip.drained` value based on the clip's mode and whether the new time is larger
     /// than the duration.
     pub fn set_time(&mut self, time: Delta) {
-        self.current_time = if time > (*self.duration) {
+        self.current_time = if time > self.duration {
             self.drained = self.mode != PlayMode::Loop;
             time % self.duration
         } else {
@@ -245,66 +240,37 @@ pub struct ClipStore {
     store: HashMap<String, AnimationClipTemplate>,
 }
 
+
+pub type SpriteSheetData = aseprite::ExportData;
+
 impl ClipStore {
-    pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
-        self.store.get(key).map(|x| AnimationClip::new(x, mode))
-    }
-}
+    pub fn new(data: &SpriteSheetData) -> Self {
+        ClipStore {
+            store: {
+                let mut clips = HashMap::new();
 
-pub struct SpriteSheetData {
-    pub cells: Vec<Frame>,
-    pub clips: ClipStore,
-}
+                for tag in &data.meta.frame_tags {
 
-impl SpriteSheetData {
-    pub fn from_json_str(json: &str) -> Self {
-        let data: aseprite::ExportData = serde_json::from_str(json).unwrap();
-        SpriteSheetData::from_aesprite_data(&data)
-    }
+                    let direction = match tag.direction.as_ref() {
+                        "forward" => Direction::Forward,
+                        "reverse" => Direction::Reverse,
+                        "pingpong" => Direction::PingPong,
+                        _ => Direction::Unknown,
+                    };
+                    let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
+                    clips.insert(
+                        tag.name.clone(),
+                        AnimationClipTemplate::new(tag.name.clone(), frames, direction, tag.from),
+                    );
+                }
 
-    pub fn from_json_value(json: serde_json::Value) -> Self {
-        let data: aseprite::ExportData = serde_json::from_value(json).unwrap();
-        SpriteSheetData::from_aesprite_data(&data)
-    }
-
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
-        let data: aseprite::ExportData = serde_json::from_reader(File::open(path).unwrap())
-            .unwrap();
-        SpriteSheetData::from_aesprite_data(&data)
-    }
-
-    pub fn from_aesprite_data(data: &aseprite::ExportData) -> Self {
-        let tags = { (*data).meta.frame_tags.iter() };
-        SpriteSheetData {
-            cells: data.frames.to_owned(),
-            clips: ClipStore {
-                store: {
-                    let mut clips = HashMap::new();
-
-                    for tag in tags {
-
-                        let direction = match tag.direction.as_ref() {
-                            "forward" => Direction::Forward,
-                            "reverse" => Direction::Reverse,
-                            "pingpong" => Direction::PingPong,
-                            _ => Direction::Unknown,
-                        };
-                        let frames: &[Frame] = &data.frames[tag.from..tag.to + 1];
-                        clips.insert(
-                            tag.name.clone(),
-                            AnimationClipTemplate::new(
-                                tag.name.clone(),
-                                frames,
-                                direction,
-                                tag.from,
-                            ),
-                        );
-                    }
-
-                    clips
-                },
+                clips
             },
         }
+    }
+
+    pub fn create(&self, key: &str, mode: PlayMode) -> Option<AnimationClip> {
+        self.store.get(key).map(|x| AnimationClip::new(x, mode))
     }
 }
 
@@ -315,9 +281,11 @@ mod test {
     #[test]
     fn test_read_from_file() {
         let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
-        let alpha = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
-        let beta = sheet.clips.create("Beta", PlayMode::Loop).unwrap();
-        let gamma = sheet.clips.create("Gamma", PlayMode::Loop).unwrap();
+        let clips = ClipStore::new(&sheet);
+
+        let alpha = clips.create("Alpha", PlayMode::Loop).unwrap();
+        let beta = clips.create("Beta", PlayMode::Loop).unwrap();
+        let gamma = clips.create("Gamma", PlayMode::Loop).unwrap();
         assert_eq!(alpha.get_cell(), Some(0));
         assert_eq!(beta.get_cell(), Some(10));
         assert_eq!(gamma.get_cell(), Some(20));
@@ -326,11 +294,13 @@ mod test {
     #[test]
     fn test_clips_are_distinct() {
         let sheet = SpriteSheetData::from_file("resources/numbers/numbers-matrix-tags.array.json");
+        let clips = ClipStore::new(&sheet);
+
 
         // Each time we get a named clip, we're creating a new instance, and each have their
         // own internal clock.
-        let mut alpha1 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
-        let mut alpha2 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+        let mut alpha1 = clips.create("Alpha", PlayMode::Loop).unwrap();
+        let mut alpha2 = clips.create("Alpha", PlayMode::Loop).unwrap();
 
         alpha1.update(20.);
         alpha2.update(120.);
@@ -342,22 +312,28 @@ mod test {
     #[test]
     fn test_clip_cell_count() {
         let sheet = get_two_sheet();
-        let alpha1 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+        let clips = ClipStore::new(&sheet);
+
+        let alpha1 = clips.create("Alpha", PlayMode::Loop).unwrap();
         assert_eq!(alpha1.cells.len(), 2);
     }
 
     #[test]
     fn test_clip_duration() {
         let sheet = get_two_sheet();
-        let alpha1 = sheet.clips.create("Alpha", PlayMode::Loop).unwrap();
+        let clips = ClipStore::new(&sheet);
+
+        let alpha1 = clips.create("Alpha", PlayMode::Loop).unwrap();
         assert!((alpha1.duration - 30.).abs() < 0.1);
     }
 
     #[test]
     fn test_oneshot_bounds() {
         let sheet = get_two_sheet();
+        let clips = ClipStore::new(&sheet);
 
-        let mut alpha1 = sheet.clips.create("Alpha", PlayMode::OneShot).unwrap();
+
+        let mut alpha1 = clips.create("Alpha", PlayMode::OneShot).unwrap();
 
         assert_eq!(alpha1.get_cell(), Some(0));
 
@@ -382,8 +358,10 @@ mod test {
     #[test]
     fn test_hold_bounds() {
         let sheet = get_two_sheet();
+        let clips = ClipStore::new(&sheet);
 
-        let mut alpha1 = sheet.clips.create("Alpha", PlayMode::Hold).unwrap();
+
+        let mut alpha1 = clips.create("Alpha", PlayMode::Hold).unwrap();
 
         assert_eq!(alpha1.get_cell(), Some(0));
 
@@ -410,8 +388,10 @@ mod test {
     fn test_deep_clips_report_correct_index() {
 
         let sheet = get_pitcher_sheet();
+        let clips = ClipStore::new(&sheet);
 
-        let mut not_ready = sheet.clips.create("Not Ready", PlayMode::OneShot).unwrap();
+
+        let mut not_ready = clips.create("Not Ready", PlayMode::OneShot).unwrap();
 
         not_ready.update(100.);
         assert_eq!(not_ready.get_cell(), Some(18));
@@ -422,13 +402,13 @@ mod test {
         not_ready.update(100.);
         assert_eq!(not_ready.get_cell(), None);
 
-        //        let mut pitching = sheet.clips.create("Pitching", PlayMode::OneShot);
+        //        let mut pitching = clips.create("Pitching", PlayMode::OneShot);
 
     }
 
     /// Generates a new sprite sheet with a 2 frame clip.
     fn get_two_sheet() -> SpriteSheetData {
-        SpriteSheetData::from_json_str(
+        aseprite::ExportData::parse_str(
             r#"{
           "frames": [
             {
@@ -451,7 +431,7 @@ mod test {
     }
     /// a real-world usage from LD38
     fn get_pitcher_sheet() -> SpriteSheetData {
-        SpriteSheetData::from_json_str(
+        aseprite::ExportData::parse_str(
             r#"{
             "frames": [
                 {"frame": { "x": 0, "y": 0, "w": 256, "h": 256 }, "duration": 100},

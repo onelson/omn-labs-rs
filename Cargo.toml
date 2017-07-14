@@ -24,7 +24,6 @@ features = ["cargo-resource-root"]
 
 [dev-dependencies]
 rand = "*"
-rustfmt-nightly = "*"
 
 [features]
 default = []
