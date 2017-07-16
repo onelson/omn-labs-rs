@@ -105,23 +105,21 @@ impl AnimationClipTemplate {
 /// playback progress over time. It answers the question of "what subsection of a sprite sheet
 /// should I render at this time?"
 ///
+/// It is unusual to construct these yourself. Normally, `AnimationClip` instances will be
+/// created by a `ClipStore` instance via `ClipStore::create()`.
+///
 /// # Examples
 ///
 /// ```
-/// use omn_labs::sprites::{AnimationClip, Delta, Frame, Region, Direction, PlayMode};
+/// use omn_labs::sprites::{AnimationClip, CellInfo, Delta, Frame, Region, Direction, PlayMode};
 ///
 /// let frames = vec![
 ///     Frame { duration: 1000, bbox: Region { x: 0, y: 0, width: 32, height: 32 } },
 ///     Frame { duration: 1000, bbox: Region { x: 32, y: 0, width: 32, height: 32 } },
 /// ];
 ///
-/// let mut clip = AnimationClip::new(
-///     "Two Frames".to_string(),
-///     &frames,
-///     0,
-///     Direction::Forward,
-///     PlayMode::Loop
-/// );
+/// let mut clip =
+///   AnimationClip::from_frames("Two Frames", Direction::Forward, PlayMode::Loop, &frames);
 ///
 /// assert_eq!(clip.get_cell(), Some(0));
 /// clip.update(800.);
@@ -158,6 +156,32 @@ impl AnimationClip {
             direction: template.direction.clone(),
             duration: template.duration,
             cells: template.cells.clone(),
+            mode: play_mode,
+            drained: false,
+        }
+    }
+
+    pub fn from_frames(
+        name: &str,
+        direction: Direction,
+        play_mode: PlayMode,
+        frames: &[Frame],
+    ) -> Self {
+        AnimationClip {
+            name: name.to_string(),
+            cells: frames
+                .iter()
+                .enumerate()
+                .map(|(idx, x)| {
+                    CellInfo {
+                        idx: idx,
+                        duration: x.duration,
+                    }
+                })
+                .collect(),
+            current_time: 0.,
+            duration: frames.iter().map(|x| x.duration as Delta).sum(),
+            direction: direction,
             mode: play_mode,
             drained: false,
         }
