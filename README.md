@@ -1,4 +1,6 @@
-# OmnLabs [![Build Status](https://api.travis-ci.org/onelson/OmnLabsRS.svg?branch=master)](https://travis-ci.org/onelson/OmnLabsRS)
+# Omn Labs [![Build Status](https://api.travis-ci.org/onelson/omn-labs-rs.svg?branch=master)](https://travis-ci.org/onelson/omn-labs-rs)
+
+A little incubator crate for the glimmer of ideas and crates yet to be.
 
 ## Development Preamble
 
