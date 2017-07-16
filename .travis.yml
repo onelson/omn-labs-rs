@@ -9,3 +9,11 @@ os:
 matrix:
   allow_failures:
     - rust: nightly
+addons:
+  apt:
+    sources:
+    - deadsnakes
+    - ubuntu-toolchain-r-test
+    packages:
+    - libsdl2-dev
+    - gcc
