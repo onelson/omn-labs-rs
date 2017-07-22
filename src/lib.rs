@@ -14,5 +14,6 @@ pub mod components;
 pub mod systems;
 pub mod assets;
 pub mod sprites;
+pub mod state;
 
 pub type Delta = f32;
