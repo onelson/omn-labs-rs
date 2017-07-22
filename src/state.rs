@@ -33,25 +33,18 @@ pub trait State {
     fn on_resume(&mut self, _world: &mut World) {}
 
     /// Executed on every frame before updating, for use in reacting to events.
-    fn handle_events(&mut self,
-                     _events: &[WindowEvent],
-                     _world: &mut World)
-                     -> Trans {
+    fn handle_events(&mut self, _events: &[WindowEvent], _world: &mut World) -> Trans {
         Trans::None
     }
 
     /// Executed repeatedly at stable, predictable intervals (1/60th of a second
     /// by default).
-    fn fixed_update(&mut self,
-                    _world: &mut World)
-                    -> Trans {
+    fn fixed_update(&mut self, _world: &mut World) -> Trans {
         Trans::None
     }
 
     /// Executed on every frame immediately, as fast as the engine will allow.
-    fn update(&mut self,
-              _world: &mut World)
-              -> Trans {
+    fn update(&mut self, _world: &mut World) -> Trans {
         Trans::None
     }
 }
@@ -65,7 +58,8 @@ pub struct StateMachine {
 impl StateMachine {
     /// Creates a new state machine with the given initial state.
     pub fn new<T>(initial_state: T) -> StateMachine
-        where T: State + 'static
+    where
+        T: State + 'static,
     {
         StateMachine {
             running: false,
@@ -91,9 +85,7 @@ impl StateMachine {
     }
 
     /// Passes a vector of events to the active state to handle.
-    pub fn handle_events(&mut self,
-                         events: &[WindowEvent],
-                         world: &mut World) {
+    pub fn handle_events(&mut self, events: &[WindowEvent], world: &mut World) {
         if self.running {
             let trans = match self.state_stack.last_mut() {
                 Some(state) => state.handle_events(events, world),
@@ -105,8 +97,7 @@ impl StateMachine {
     }
 
     /// Updates the currently active state at a steady, fixed interval.
-    pub fn fixed_update(&mut self,
-                        world: &mut World) {
+    pub fn fixed_update(&mut self, world: &mut World) {
         if self.running {
             let trans = match self.state_stack.last_mut() {
                 Some(state) => state.fixed_update(world),
@@ -131,9 +122,7 @@ impl StateMachine {
 
     /// Performs a state transition, if requested by either update() or
     /// fixed_update().
-    fn transition(&mut self,
-                  request: Trans,
-                  world: &mut World) {
+    fn transition(&mut self, request: Trans, world: &mut World) {
         if self.running {
             match request {
                 Trans::None => (),
@@ -146,9 +135,7 @@ impl StateMachine {
     }
 
     /// Removes the current state on the stack and inserts a different one.
-    fn switch(&mut self,
-              state: Box<State>,
-              world: &mut World) {
+    fn switch(&mut self, state: Box<State>, world: &mut World) {
         if self.running {
             if let Some(mut state) = self.state_stack.pop() {
                 state.on_stop(world);
@@ -161,9 +148,7 @@ impl StateMachine {
     }
 
     /// Pauses the active state and pushes a new state onto the state stack.
-    fn push(&mut self,
-            state: Box<State>,
-            world: &mut World) {
+    fn push(&mut self, state: Box<State>, world: &mut World) {
         if self.running {
             if let Some(state) = self.state_stack.last_mut() {
                 state.on_pause(world);
