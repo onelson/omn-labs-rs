@@ -1,3 +1,6 @@
+/// Borrowed almost verbatim from the state module in https://github.com/amethyst/amethyst
+///
+
 use specs::World;
 
 pub struct WindowEvent;
