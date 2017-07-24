@@ -21,6 +21,7 @@ features = ["cargo-resource-root"]
 
 [dev-dependencies]
 rand = "*"
+rustyline = "1.0"
 
 [features]
 default = []
