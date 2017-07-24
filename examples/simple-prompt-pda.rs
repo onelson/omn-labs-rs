@@ -10,9 +10,7 @@ fn main() {
     let mut rl = Editor::<()>::new();
     loop {
         println!("Gimmie a val!");
-        let readline = rl.readline(">> ");
-
-        match readline {
+        match rl.readline(">> ") {
             Err(_) => {
                 println!("Bye!");
                 break;
@@ -22,7 +20,7 @@ fn main() {
                     println!("Bye!");
                     break;
                 }
-                println!("val: {}", val)
+                println!("val: {}", val);
             }
         }
     }
